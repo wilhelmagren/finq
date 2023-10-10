@@ -31,8 +31,8 @@ import logging
 import os
 import numpy as np
 
-from finq.errors import NoFeasibleSolutionsError
-from .solution import Solution
+from finq.portfolio.solution import Solution
+from finq.errors import NoFeasibleSolutionError
 from dwave.system import LeapHybridCQMSampler
 from typing import (
     Callable,
@@ -89,7 +89,7 @@ class Portfolio(object):
         feasible_samples = sample_set.filter(filter_)
 
         if not feasible_samples:
-            raise NoFeasibleSolutionsError(
+            raise NoFeasibleSolutionError(
                 f'Found no feasible solutions from `{n_samples}` number of samples'
             )
         

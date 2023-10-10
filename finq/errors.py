@@ -26,6 +26,6 @@ Last updated: 2023-10-09
 """
 
 
-class NoFeasibleSolutionsError(Exception):
+class NoFeasibleSolutionError(Exception):
     """ """
     pass
