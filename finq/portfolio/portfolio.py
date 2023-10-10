@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-09
+Last updated: 2023-10-10
 """
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ from typing import (
 
 log = logging.getLogger(__name__)
 
+
 class Portfolio(object):
     """ """
 
@@ -55,34 +56,38 @@ class Portfolio(object):
         if u == 0:
             if v == 0:
                 return np.ones(u.shape).astype(u.dtype)
-            raise ValueError(
-                f'Can not divide by zero, {u}/{v}.'
-            )
+            raise ValueError(f"Can not divide by zero, {u}/{v}.")
         return u / v
 
-    def optimize(self, *,
+    def optimize(
+        self,
+        *,
         token: Optional[str] = None,
         filter_: Optional[Callable] = None,
-        label: str = 'CQM Portfolio',
+        label: str = "CQM Portfolio",
         time_limit: int = 10,
     ) -> Solution:
         """ """
 
         if token is None:
-            log.warn('No API token passed to the optimize function, checking for `DWAVE_TOKEN` in environment variables...')
-            token = os.getenv('DWAVE_TOKEN', None)
-        
+            log.warn(
+                "No API token passed to the optimize function, checking for `DWAVE_TOKEN` in environment variables..."
+            )
+            token = os.getenv("DWAVE_TOKEN", None)
+
         if token is None:
             raise ValueError(
-                f'You need to provide an API token to access `D-Wave Leap QPUs`, token=`{token}`'
+                f"You need to provide an API token to access `D-Wave Leap QPUs`, token=`{token}`"
             )
-        
+
         if filter_ is None:
-            log.info('No filtering method provided, will use: `lambda s: s.is_feasible`')
+            log.info(
+                "No filtering method provided, will use: `lambda s: s.is_feasible`"
+            )
             filter_ = lambda s: s.is_feasible
-        
+
         sampler = LeapHybridCQMSampler(token=token)
-        log.info('Sampling `{label}` using CQM on D-Wave Leap...')
+        log.info("Sampling `{label}` using CQM on D-Wave Leap...")
         sample_set = sampler.sample_cqm(self._model, label=label, time_limit=time_limit)
 
         n_samples = len(sample_set.record)
@@ -90,19 +95,20 @@ class Portfolio(object):
 
         if not feasible_samples:
             raise NoFeasibleSolutionError(
-                f'Found no feasible solutions from `{n_samples}` number of samples'
+                f"Found no feasible solutions from `{n_samples}` number of samples"
             )
-        
+
         optimal = feasible_samples.first.sample
         optimal_solution = Solution(optimal)
 
-        print(f'{len(feasible_samples)} feasible solutions sampled.')
-        print(f'Lowest energy:\t\t\t{sample_set.first.energy:.3f}')
-        print(f'Lowest energy (feasible):\t{feasible_samples.first.energy:.3f}')
+        print(f"{len(feasible_samples)} feasible solutions sampled.")
+        print(f"Lowest energy:\t\t\t{sample_set.first.energy:.3f}")
+        print(f"Lowest energy (feasible):\t{feasible_samples.first.energy:.3f}")
 
         return optimal_solution
 
-    def sample_random_solutions(self,
+    def sample_random_solutions(
+        self,
         n_samples: int,
         **kwargs: dict,
     ) -> list[Solution]:

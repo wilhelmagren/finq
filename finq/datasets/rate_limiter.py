@@ -29,6 +29,8 @@ from requests import Session
 from requests_cache import CacheMixin
 from requests_ratelimiter import LimiterMixin
 
+
 class CachedRateLimiter(CacheMixin, LimiterMixin, Session):
     """ """
+
     pass
