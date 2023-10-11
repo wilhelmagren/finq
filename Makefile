@@ -22,7 +22,7 @@ format:
 
 .PHONY: lint
 lint:
-	python3 -m flake8 finq
+	ruff --output-format=github --target-version=py310 . --fix
 
 .PHONY: requp
 requp:
