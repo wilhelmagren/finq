@@ -16,6 +16,18 @@ build:
 	python3 -m pip install build --upgrade
 	python3 -m build
 
+.PHONY: format
+format:
+	python3 -m black finq
+
+.PHONY: lint
+lint:
+	python3 -m flake8 finq
+
+.PHONY: requp
+requp:
+	python3 -m pipreqs.pipreqs . --force
+
 .PHONY: clean-test
 clean-test: clear-pycache unittest
 
