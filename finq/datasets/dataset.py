@@ -45,6 +45,7 @@ from pyrate_limiter import (
 from collections import OrderedDict
 from pathlib import Path
 from typing import (
+    Optional,
     Any,
     Dict,
     List,
@@ -82,7 +83,7 @@ class Dataset(object):
 
         if not (len(names) == len(symbols)):
             raise ValueError(
-                f"Number of names does not match the list of symbols, "
+                "Number of names does not match the list of symbols, "
                 f"{len(names)} != {len(symbols)}. {names=}\n{symbols=}"
             )
 
@@ -109,16 +110,16 @@ class Dataset(object):
         if path.exists():
             if not path.is_dir():
                 raise ValueError(
-                    f"Your specified path to save the fetched data to is not a directory, "
-                    f"maybe you provided a path to a file you want to create?"
+                    "Your specified path to save the fetched data to is not a "
+                    "directory, maybe you provided a path to a file you want to create?"
                 )
             log.warn(
-                f"path `{path}` already exists, will overwrite any newly fetched data..."
+                f"path `{path}` already exists, will overwrite newly fetched data..."
             )
         else:
-            log.info(f"trying to create your specified save path...")
+            log.info("trying to create your specified save path...")
             path.mkdir(parents=True, exist_ok=False)
-            log.info(f"OK!")
+            log.info("OK!")
 
             data_path = path / "data"
             info_path = path / "info"
@@ -149,8 +150,9 @@ class Dataset(object):
     ) -> Dataset:
         """ """
 
-        # We combine a requests_cache with rate-limiting to avoid triggering Yahoo's rate-limiter
-        # that can otherwise corrupt data. We specify maximum number of requests per X seconds.
+        # We combine a requests_cache with rate-limiting to avoid triggering
+        # Yahoo's rate-limiter that can otherwise corrupt data. We specify
+        # a maximum number of requests N per X seconds.
         session = CachedRateLimiter(
             limiter=Limiter(
                 RequestRate(
@@ -263,8 +265,8 @@ class Dataset(object):
             if diff:
                 raise ValueError(
                     f"There is a difference in dates for symbol `{symbol}`, have you "
-                    f"tried fixing missing values prior to verifying? To do that, run "
-                    f"dataset.fix_missing_data() with your initialized dataset class."
+                    "tried fixing missing values prior to verifying? To do that, run "
+                    "dataset.fix_missing_data() with your initialized dataset class."
                 )
         log.info("OK!")
 
@@ -293,14 +295,14 @@ class Dataset(object):
 
         plt.title(title)
         plt.xlabel(xlabel)
-        plt.ylabel(ylabel + " (log scale)")
+        plt.ylabel(ylabel + " (log scale)" if log_scale else "")
         plt.xticks(rotation=ticks_rotation)
         plt.legend(loc=legend_loc)
 
         if save_path:
             log.info(f"saving plot to path `{save_path}`")
             plt.savefig(save_path)
-            log.info(f"OK!")
+            log.info("OK!")
 
         plt.show()
 

@@ -25,8 +25,6 @@ File created: 2023-10-09
 Last updated: 2023-10-11
 """
 
-from finq import datasets
-from finq import portfolio
 
 import numpy as np
 import logging

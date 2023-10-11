@@ -24,6 +24,3 @@ SOFTWARE.
 File created: 2023-10-10
 Last updated: 2023-10-11
 """
-
-from .dataset import Dataset
-from .omxs30 import OMXS30

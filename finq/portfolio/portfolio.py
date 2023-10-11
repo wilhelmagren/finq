@@ -73,20 +73,24 @@ class Portfolio(object):
 
         if token is None:
             log.warn(
-                "No API token passed to the optimize function, checking for `DWAVE_TOKEN` in environment variables..."
+                "No API token passed to the optimize function, "
+                "checking for `DWAVE_TOKEN` in environment variables..."
             )
             token = os.getenv("DWAVE_TOKEN", None)
 
         if token is None:
             raise ValueError(
-                f"You need to provide an API token to access `D-Wave Leap QPUs`, token=`{token}`"
+                "You need to provide an API token to access `D-Wave Leap QPUs`, "
+                f"token=`{token}`"
             )
 
         if filter_ is None:
             log.info(
                 "No filtering method provided, will use: `lambda s: s.is_feasible`"
             )
-            filter_ = lambda s: s.is_feasible
+
+            def filter_(s):
+                return s.is_feasible
 
         sampler = LeapHybridCQMSampler(token=token)
         log.info("Sampling `{label}` using CQM on D-Wave Leap...")
