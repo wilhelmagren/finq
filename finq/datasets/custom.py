@@ -21,14 +21,35 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
+File created: 2023-10-11
 Last updated: 2023-10-11
 """
 
+from finq.datasets.dataset import Dataset
 
-class Solution(object):
+from pathlib import Path
+from typing import (
+    List,
+    Dict,
+    Union,
+)
+
+
+class CustomDataset(Dataset):
     """ """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        names: List[str],
+        symbols: List[str],
+        *,
+        save_path: Union[str, Path] = ".data/CUSTOM/",
+        **kwargs: Dict,
+    ):
         """ """
-        pass
+        super(CustomDataset, self).__init__(
+            names,
+            symbols,
+            save_path=save_path,
+            **kwargs,
+        )
