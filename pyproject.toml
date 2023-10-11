@@ -1,0 +1,36 @@
+[build-system]
+requires = [ 'setuptools>=61.0' ]
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'finq'
+version = '0.1.0'
+authors = [
+    { name='Wilhelm Ågren', email='wilhelmagren98@gmail.com' },
+]
+
+description = ''
+readme = 'README.md'
+requires-python = '>=3.7'
+classifiers = [
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: OS Independent',
+    'Intended Audience :: Developers',
+]
+
+[project.urls]
+'Homepage' = 'https://github.com/wilhelmagren/finq'
+'Bug tracker' = 'https://github.com/wilhelmagren/finq/issues'
+
+[tool.ruff]
+select = [ 'F' ]
+ignore = [ 'E501' ]
+
+[tool.black]
+line-length = 89
+target-version = [ 'py310' ]
