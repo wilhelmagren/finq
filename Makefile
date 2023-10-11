@@ -22,7 +22,7 @@ format:
 
 .PHONY: lint
 lint:
-	ruff --output-format=github --target-version=py310 . --fix
+	ruff check --output-format=github --target-version=py310 . --fix
 
 .PHONY: requp
 requp:
