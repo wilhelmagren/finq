@@ -31,7 +31,7 @@ import logging
 import numpy as np
 from pathlib import Path
 
-from finq.datasets import CustomDataset
+from finq.datasets.custom import CustomDataset
 
 log = logging.getLogger(__name__)
 SAVE_PATH = ".data/CUSTOM_COOL/"
