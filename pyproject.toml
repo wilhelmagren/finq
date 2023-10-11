@@ -29,8 +29,9 @@ classifiers = [
 
 [tool.ruff]
 select = [ 'F' ]
-ignore = [ 'E501' ]
+ignore = [ 'E401', 'E501' ]
 
 [tool.black]
 line-length = 89
 target-version = [ 'py310' ]
+exclude = '__init__.py'
