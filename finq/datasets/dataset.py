@@ -22,13 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-10
+Last updated: 2023-10-11
 """
 
 from __future__ import annotations
 
 import logging
 import json
+import matplotlib.pyplot as plt
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -55,7 +56,17 @@ log = logging.getLogger(__name__)
 
 
 class Dataset(object):
-    """ """
+    """
+
+    Functions
+    ---------
+        fetch_data(self, str, *, int, int, str) -> self
+        fix_missing_data(self) -> self
+        verify_data(self) -> Exception | self
+        run(self, str) -> None
+        visualize(self, *, str, str, str, int, str, bool, str) -> None
+
+    """
 
     def __init__(
         self,
@@ -86,6 +97,7 @@ class Dataset(object):
         self._save = save
         self._save_path = save_path
 
+        # TODO: implement more missing values strategies(?)
         log.info(f"will handle missing values according to strategy `{missing_values}`")
         self._missing_values = missing_values
 
@@ -235,12 +247,12 @@ class Dataset(object):
 
         if missed_data:
             log.info(
-                f'the following symbols had missing data: `{",".join(missed_data)}`'
+                f"the following symbols had missing data: `{','.join(missed_data)}`"
             )
         log.info("OK!")
         return self
 
-    def verify_data(self) -> Union[Exception, Dataset]:
+    def verify_data(self) -> Union[Exception, NoReturn]:
         """ """
 
         log.info("verifying that stored data has no missing values...")
@@ -255,7 +267,42 @@ class Dataset(object):
                     f"dataset.fix_missing_data() with your initialized dataset class."
                 )
         log.info("OK!")
-        return self
+
+    def run(self, period: str) -> Union[Exception, NoReturn]:
+        """ """
+        self.fetch_data(period).fix_missing_data().verify_data()
+
+    def visualize(
+        self,
+        *,
+        title: str = "Historical stock data",
+        xlabel: Optional[str] = None,
+        ylabel: str = "Closing price [$]",
+        ticks_rotation: int = 80,
+        legend_loc: str = "best",
+        log_scale: bool = False,
+        save_path: Optional[str] = None,
+    ):
+        """ """
+
+        for symbol, data in self._data.items():
+            plt.plot(
+                np.log(data["Close"]) if log_scale else data["Close"],
+                label=symbol,
+            )
+
+        plt.title(title)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel + " (log scale)")
+        plt.xticks(rotation=ticks_rotation)
+        plt.legend(loc=legend_loc)
+
+        if save_path:
+            log.info(f"saving plot to path `{save_path}`")
+            plt.savefig(save_path)
+            log.info(f"OK!")
+
+        plt.show()
 
     def get_tickers(self) -> List[str]:
         """ """

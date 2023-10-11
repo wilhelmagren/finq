@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-10
+Last updated: 2023-10-11
 """
 
 from __future__ import annotations
@@ -35,6 +35,8 @@ from finq.portfolio.solution import Solution
 from finq.errors import NoFeasibleSolutionError
 from dwave.system import LeapHybridCQMSampler
 from typing import (
+    List,
+    Dict,
     Callable,
     Optional,
     Union,
@@ -110,7 +112,7 @@ class Portfolio(object):
     def sample_random_solutions(
         self,
         n_samples: int,
-        **kwargs: dict,
-    ) -> list[Solution]:
+        **kwargs: Dict,
+    ) -> List[Solution]:
         """ """
         pass
