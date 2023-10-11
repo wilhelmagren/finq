@@ -2,7 +2,7 @@ dwave_cloud_client==0.10.6
 dwave_preprocessing==0.6.3
 dwave_samplers==1.1.0
 dwave_system==1.21.0
-numpy==1.24.4
+numpy==1.26.0
 pandas==2.1.1
 pyrate_limiter>=2.8,<4.0
 Requests==2.31.0
