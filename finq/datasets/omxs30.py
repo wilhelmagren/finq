@@ -25,7 +25,7 @@ File created: 2023-10-10
 Last updated: 2023-10-11
 """
 
-from finq.datasets import Dataset
+from finq.datasets.dataset import Dataset
 
 from pathlib import Path
 from typing import (
@@ -33,7 +33,7 @@ from typing import (
     Union,
 )
 
-names = [
+omxs30_names = [
     "ABB Ltd",
     "Alfa Laval",
     "Autoliv SDB",
@@ -66,7 +66,7 @@ names = [
     "Volvo B",
 ]
 
-symbols = [
+omxs30_symbols = [
     "ABB.ST",
     "ALFA.ST",
     "ALIV-SDB.ST",
@@ -112,8 +112,8 @@ class OMXS30(Dataset):
         """ """
 
         super(OMXS30, self).__init__(
-            names,
-            symbols,
+            omxs30_names,
+            omxs30_symbols,
             save_path=save_path,
             **kwargs,
         )

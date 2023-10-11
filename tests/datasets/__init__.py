@@ -21,14 +21,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
+File created: 2023-10-11
 Last updated: 2023-10-11
 """
 
+import sys
+import logging
 
-class Solution(object):
-    """ """
+log = logging.getLogger(__name__)
 
-    def __init__(self, *args, **kwargs):
-        """ """
-        pass
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s\t] %(message)s")
+
+console_handler.setFormatter(formatter)
+log.addHandler(console_handler)

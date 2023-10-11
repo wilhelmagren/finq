@@ -92,21 +92,21 @@ class Dataset(object):
 
         if save:
             save_path = Path(save_path)
-            log.info(f"will save fetched data to path `{save_path}`")
+            log.debug(f"will save fetched data to path `{save_path}`")
             self._validate_save_path(save_path)
 
         self._save = save
         self._save_path = save_path
 
         # TODO: implement more missing values strategies(?)
-        log.info(f"will handle missing values according to strategy `{missing_values}`")
+        log.debug(f"will handle missing values according to strategy `{missing_values}`")
         self._missing_values = missing_values
 
     @staticmethod
     def _validate_save_path(path: Path) -> Union[Exception, NoReturn]:
         """ """
 
-        log.info(f"validating `{path}` path...")
+        log.debug(f"validating `{path}` path...")
         if path.exists():
             if not path.is_dir():
                 raise ValueError(
@@ -117,20 +117,20 @@ class Dataset(object):
                 f"path `{path}` already exists, will overwrite newly fetched data..."
             )
         else:
-            log.info("trying to create your specified save path...")
+            log.debug("trying to create your specified save path...")
             path.mkdir(parents=True, exist_ok=False)
-            log.info("OK!")
+            log.debug("OK!")
 
             data_path = path / "data"
             info_path = path / "info"
 
-            log.info(f"creating path `{data_path}`...")
+            log.debug(f"creating path `{data_path}`...")
             data_path.mkdir(parents=False, exist_ok=False)
-            log.info("OK!")
+            log.debug("OK!")
 
-            log.info(f"creating path `{info_path}`...")
+            log.debug(f"creating path `{info_path}`...")
             info_path.mkdir(parents=False, exist_ok=False)
-            log.info("OK!")
+            log.debug("OK!")
 
     @staticmethod
     def _interpolate_values(
@@ -176,7 +176,7 @@ class Dataset(object):
 
         if self._save:
             # self._save_fetched_data()
-            log.info(f"saving fetched data to `{self._save_path}`")
+            log.debug(f"saving fetched data to `{self._save_path}`")
             for symbol in self._symbols:
                 data[symbol].to_csv(
                     self._save_path / "data" / f"{symbol}.csv", sep=separator
@@ -184,7 +184,7 @@ class Dataset(object):
                 with open(self._save_path / "info" / f"{symbol}.json", "w") as f:
                     json.dump(info[symbol], f)
 
-            log.info("OK!")
+            log.debug("OK!")
 
         self._info = info
         self._data = data
@@ -197,7 +197,7 @@ class Dataset(object):
 
         ticker_dates = {}
 
-        log.info(f"using missing values strategy: `{self._missing_values}`")
+        log.debug(f"using missing values strategy: `{self._missing_values}`")
         for symbol in self._symbols:
             dates = self._data[symbol].index
             ticker_dates[symbol] = set(dates)
@@ -248,16 +248,16 @@ class Dataset(object):
             self._data[symbol] = df
 
         if missed_data:
-            log.info(
+            log.debug(
                 f"the following symbols had missing data: `{','.join(missed_data)}`"
             )
-        log.info("OK!")
+        log.debug("OK!")
         return self
 
-    def verify_data(self) -> Union[Exception, NoReturn]:
+    def verify_data(self) -> Union[Exception, Dataset]:
         """ """
 
-        log.info("verifying that stored data has no missing values...")
+        log.debug("verifying that stored data has no missing values...")
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Verifying `{symbol}`\t no missing values")
             dates = set(self._data[symbol].index)
@@ -268,7 +268,8 @@ class Dataset(object):
                     "tried fixing missing values prior to verifying? To do that, run "
                     "dataset.fix_missing_data() with your initialized dataset class."
                 )
-        log.info("OK!")
+        log.debug("OK!")
+        return self
 
     def run(self, period: str) -> Union[Exception, NoReturn]:
         """ """
@@ -300,9 +301,9 @@ class Dataset(object):
         plt.legend(loc=legend_loc)
 
         if save_path:
-            log.info(f"saving plot to path `{save_path}`")
+            log.debug(f"saving plot to path `{save_path}`")
             plt.savefig(save_path)
-            log.info("OK!")
+            log.debug("OK!")
 
         plt.show()
 
