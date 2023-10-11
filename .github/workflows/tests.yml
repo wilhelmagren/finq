@@ -26,6 +26,11 @@ jobs:
         run: |
           python3 -m pip install pip --upgrade
           python3 -m pip install -r requirements.txt
+          python3 -m pip install coverage
       - name: Run tests
-        run: python3 -m unittest tests
+        run: coverage run -m unittest tests
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
