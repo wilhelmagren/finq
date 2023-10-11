@@ -85,9 +85,7 @@ class Portfolio(object):
             )
 
         if filter_ is None:
-            log.info(
-                "No filtering method provided, will use: `lambda s: s.is_feasible`"
-            )
+            log.info("No filtering method provided, will use: `lambda s: s.is_feasible`")
 
             def filter_(s):
                 return s.is_feasible
