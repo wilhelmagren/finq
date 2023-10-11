@@ -21,11 +21,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
-Last updated: 2023-10-09
+File created: 2023-10-11
+Last updated: 2023-10-11
 """
 
-import pkgutil
 import sys
 import logging
 
@@ -38,12 +37,3 @@ formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s\t] %(mess
 
 console_handler.setFormatter(formatter)
 log.addHandler(console_handler)
-
-
-def load_tests(loader, suite, pattern):
-    for imp, modname, _ in pkgutil.walk_packages(__path__):
-        mod = imp.find_module(modname).load_module(modname)
-        for test in loader.loadTestsFromModule(mod):
-            suite.addTests(test)
-
-    return suite
