@@ -24,6 +24,10 @@ format:
 lint:
 	ruff check --output-format=github --target-version=py310 . --fix
 
+.PHONY: pre-commit
+pre-commit:
+	pre-commit run --all-files
+
 .PHONY: requp
 requp:
 	python3 -m pipreqs.pipreqs . --force
