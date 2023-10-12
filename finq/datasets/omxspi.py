@@ -21,12 +21,36 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-10
-Last updated: 2023-10-12
+File created: 2023-10-13
+Last updated: 2023-10-13
 """
 
-from .custom import CustomDataset  # noqa
-from .dataset import Dataset  # noqa
-from .omxs30 import OMXS30  # noqa
-from .omxspi import OMXSPI  # noqa
-from .snp500 import SNP500  # noqa
+from finq.datasets.dataset import Dataset
+from finq.datautil import _fetch_names_and_symbols
+
+from pathlib import Path
+from typing import (
+    Dict,
+    Union,
+)
+
+
+class OMXSPI(Dataset):
+    """ """
+
+    def __init__(
+        self,
+        *,
+        save_path: Union[str, Path] = ".data/OMXSPI/",
+        **kwargs: Dict,
+    ):
+        """ """
+
+        omxspi_names, omxspi_symbols = _fetch_names_and_symbols("OMXSPI")
+
+        super(OMXSPI, self).__init__(
+            omxspi_names,
+            omxspi_symbols,
+            save_path=save_path,
+            **kwargs,
+        )
