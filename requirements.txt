@@ -1,4 +1,4 @@
-dwave_cloud_client==0.10.6
+dwave_cloud_client==0.11.0
 dwave_preprocessing==0.6.3
 dwave_samplers==1.1.0
 dwave_system==1.21.0
