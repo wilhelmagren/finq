@@ -21,12 +21,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-10
-Last updated: 2023-10-12
+File created: 2023-10-13
+Last updated: 2023-10-13
 """
 
-from .custom import CustomDataset  # noqa
-from .dataset import Dataset  # noqa
-from .omxs30 import OMXS30  # noqa
-from .omxspi import OMXSPI  # noqa
-from .snp500 import SNP500  # noqa
+import unittest
+
+from finq.datautil import _fetch_names_and_symbols
+
+
+class NasdaqRequestsTest(unittest.TestCase):
+    """ """
+
+    def test_not_supported_index(self):
+        """ """
+        self.assertRaises(ValueError, _fetch_names_and_symbols, "KEBABXD")

@@ -21,12 +21,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-10
-Last updated: 2023-10-12
+File created: 2023-10-13
+Last updated: 2023-10-13
 """
 
-from .custom import CustomDataset  # noqa
-from .dataset import Dataset  # noqa
-from .omxs30 import OMXS30  # noqa
-from .omxspi import OMXSPI  # noqa
-from .snp500 import SNP500  # noqa
+import sys
+import logging
+
+log = logging.getLogger(__name__)
+
+console_handler = logging.StreamHandler(sys.stdout)
+console_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s\t] %(message)s")
+
+console_handler.setFormatter(formatter)
+log.addHandler(console_handler)

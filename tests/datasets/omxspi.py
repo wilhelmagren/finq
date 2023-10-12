@@ -21,12 +21,34 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-10
-Last updated: 2023-10-12
+File created: 2023-10-13
+Last updated: 2023-10-13
 """
 
-from .custom import CustomDataset  # noqa
-from .dataset import Dataset  # noqa
-from .omxs30 import OMXS30  # noqa
-from .omxspi import OMXSPI  # noqa
-from .snp500 import SNP500  # noqa
+import shutil
+import unittest
+import logging
+from pathlib import Path
+
+
+log = logging.getLogger(__name__)
+SAVE_PATH = ".data/OMXSPI/"
+
+
+class OMXSPITest(unittest.TestCase):
+    """ """
+
+    def setUp(self):
+        """ """
+        log.info(f"setting up `{self.__class__.__name__}`...")
+
+        self._save_path = SAVE_PATH
+
+    def tearDown(self):
+        """ """
+        path = Path(SAVE_PATH)
+
+        if path.is_dir():
+            log.info(f"deleting `{path}` recursively...")
+            shutil.rmtree(SAVE_PATH)
+            log.info("OK!")

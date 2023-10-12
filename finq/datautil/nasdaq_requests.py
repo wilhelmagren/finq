@@ -32,8 +32,10 @@ import string
 import requests
 import pandas as pd
 
+from requests.exceptions import HTTPError
 from datetime import datetime
 from typing import (
+    Union,
     List,
     Dict,
     Tuple,
@@ -58,7 +60,7 @@ def _fetch_names_and_symbols(
     query_params: Dict = {},
     headers: Dict = {},
     filter_symbols: Optional[Callable] = None,
-) -> Tuple[List[str], List[str]]:
+) -> Union[Exception, Tuple[List[str], List[str]]]:
     """ """
 
     if index not in SUPPORTED_INDEX:
@@ -88,7 +90,9 @@ def _fetch_names_and_symbols(
     )
 
     if response.status_code != 200:
-        pass
+        raise HTTPError(
+            f"Could not get the index components from nasdaq, {response}",
+        )
 
     log.info(f"{response.status_code} OK")
 
