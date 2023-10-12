@@ -22,9 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-11
+Last updated: 2023-10-12
 """
 
+from finq import datasets  # noqa
+from finq import datautil  # noqa
 
 import numpy as np
 import logging

@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-11
+Last updated: 2023-10-12
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-from .rate_limiter import CachedRateLimiter
+from finq.datautil import CachedRateLimiter
 from tqdm import tqdm
 from pyrate_limiter import (
     Duration,

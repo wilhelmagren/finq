@@ -11,3 +11,5 @@ requests_ratelimiter==0.4.2
 tqdm==4.66.1
 yfinance==0.2.31
 matplotlib>=2.1.0,<3.8.0
+requests
+openpyxl

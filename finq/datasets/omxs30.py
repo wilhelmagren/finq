@@ -22,82 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-11
+Last updated: 2023-10-12
 """
 
 from finq.datasets.dataset import Dataset
+from finq.datautil import _fetch_names_and_symbols
 
 from pathlib import Path
 from typing import (
     Dict,
     Union,
 )
-
-omxs30_names = [
-    "ABB Ltd",
-    "Alfa Laval",
-    "Autoliv SDB",
-    "ASSA ABLOY B",
-    "Atlas Copco A",
-    "Atlas Copco B",
-    "AstraZeneca",
-    "Boliden",
-    "Electrolux B",
-    "Ericsson B",
-    "Essity B",
-    "Evolution",
-    "Getinge B",
-    "Hexagon B",
-    "Hennes & Mauritz B",
-    "Investor B",
-    "Kinnevik B",
-    "Nordea Bank Abp",
-    "NIBE Industrier B",
-    "Sandvik",
-    "Samhällsbyggnadbo.i Norden AB",
-    "SCA B",
-    "SEB A",
-    "Sv. Handelsbanken A",
-    "Sinch",
-    "SKF B",
-    "Swedbank A",
-    "Tele2 B",
-    "Telia Company",
-    "Volvo B",
-]
-
-omxs30_symbols = [
-    "ABB.ST",
-    "ALFA.ST",
-    "ALIV-SDB.ST",
-    "ASSA-B.ST",
-    "ATCO-A.ST",
-    "ATCO-B.ST",
-    "AZN.ST",
-    "BOL.ST",
-    "ELUX-B.ST",
-    "ERIC-B.ST",
-    "ESSITY-B.ST",
-    "EVO.ST",
-    "GETI-B.ST",
-    "HEXA-B.ST",
-    "HM-B.ST",
-    "INVE-B.ST",
-    "KINV-B.ST",
-    "NDA-SE.ST",
-    "NIBE-B.ST",
-    "SAND.ST",
-    "SBB-B.ST",
-    "SCA-B.ST",
-    "SEB-A.ST",
-    "SHB-A.ST",
-    "SINCH.ST",
-    "SKF-B.ST",
-    "SWED-A.ST",
-    "TEL2-B.ST",
-    "TELIA.ST",
-    "VOLV-B.ST",
-]
 
 
 class OMXS30(Dataset):
@@ -110,6 +45,8 @@ class OMXS30(Dataset):
         **kwargs: Dict,
     ):
         """ """
+
+        omxs30_names, omxs30_symbols = _fetch_names_and_symbols("OMXS30")
 
         super(OMXS30, self).__init__(
             omxs30_names,

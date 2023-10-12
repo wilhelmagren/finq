@@ -21,35 +21,51 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-11
+File created: 2023-10-12
 Last updated: 2023-10-12
 """
 
-from finq.datasets.dataset import Dataset
-
+import shutil
+import unittest
+import logging
+import numpy as np
 from pathlib import Path
-from typing import (
-    List,
-    Dict,
-    Union,
-)
+
+from finq.datasets import OMXS30
+
+log = logging.getLogger(__name__)
+SAVE_PATH = ".data/OMXS30/"
 
 
-class CustomDataset(Dataset):
+class OMXS30Test(unittest.TestCase):
     """ """
 
-    def __init__(
-        self,
-        names: List[str],
-        symbols: List[str],
-        *,
-        save_path: Union[str, Path] = ".data/CUSTOM/",
-        **kwargs: Dict,
-    ):
+    def setUp(self):
         """ """
-        super(CustomDataset, self).__init__(
-            names,
-            symbols,
-            save_path=save_path,
-            **kwargs,
-        )
+        log.info(f"setting up `{self.__class__.__name__}`...")
+
+        self._save_path = SAVE_PATH
+
+    def tearDown(self):
+        """ """
+        path = Path(SAVE_PATH)
+
+        if path.is_dir():
+            log.info(f"deleting `{path}` recursively...")
+            shutil.rmtree(SAVE_PATH)
+            log.info("OK!")
+
+    def test_fetch_data_no_save(self):
+        """ """
+        dataset = OMXS30(save_path=self._save_path, save=False)
+
+        dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+
+        self.assertTrue(isinstance(dataset.as_numpy(), np.ndarray))
+
+    def test_fetch_data_save(self):
+        """ """
+        dataset = OMXS30(save_path=self._save_path, save=True)
+        dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+
+        self.assertTrue(Path(dataset._save_path).is_dir())
