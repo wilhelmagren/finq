@@ -22,16 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-12
+Last updated: 2023-10-13
 """
 
 from finq.datasets.dataset import Dataset
+from finq.datautil import _fetch_names_and_symbols
 
 from pathlib import Path
 from typing import (
     List,
     Dict,
     Union,
+    Optional,
 )
 
 
@@ -40,13 +42,22 @@ class CustomDataset(Dataset):
 
     def __init__(
         self,
-        names: List[str],
-        symbols: List[str],
         *,
+        names: Optional[List[str]] = None,
+        symbols: Optional[List[str]] = None,
+        nasdaq_index: Optional[str] = None,
         save_path: Union[str, Path] = ".data/CUSTOM/",
         **kwargs: Dict,
     ):
         """ """
+
+        if all(map(lambda x: x is None, (names, symbols, nasdaq_index))):
+            raise ValueError("all can't be None")
+        
+        if nasdaq_index:
+            names, symbols = _fetch_names_and_symbols(nasdaq_index)
+            save_path = f".data/{nasdaq_index}/"
+
         super(CustomDataset, self).__init__(
             names,
             symbols,
