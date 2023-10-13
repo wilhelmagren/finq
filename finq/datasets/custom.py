@@ -42,9 +42,9 @@ class CustomDataset(Dataset):
 
     def __init__(
         self,
-        *,
         names: Optional[List[str]] = None,
         symbols: Optional[List[str]] = None,
+        *,
         nasdaq_index: Optional[str] = None,
         save_path: Union[str, Path] = ".data/CUSTOM/",
         **kwargs: Dict,
@@ -53,7 +53,7 @@ class CustomDataset(Dataset):
 
         if all(map(lambda x: x is None, (names, symbols, nasdaq_index))):
             raise ValueError("all can't be None")
-        
+
         if nasdaq_index:
             names, symbols = _fetch_names_and_symbols(nasdaq_index)
             save_path = f".data/{nasdaq_index}/"
