@@ -28,10 +28,6 @@ lint:
 pre-commit:
 	pre-commit run --all-files
 
-.PHONY: requp
-requp:
-	python3 -m pipreqs.pipreqs . --force
-
 .PHONY: clean-test
 clean-test: clear-pycache unittest
 
