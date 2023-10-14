@@ -32,4 +32,4 @@ jobs:
         run: poetry build --format wheel
         continue-on-error: false
       - name: Publish to PyPI
-        uses: poetry publish --repository pypi
+        run: poetry publish --repository pypi
