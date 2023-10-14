@@ -9,6 +9,7 @@
 </p>
 </div>
 
+![[PyPI - Version](https://img.shields.io/pypi/v/pyfinq)](https://pypi.org/project/pyfinq)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/wilhelmagren/finq/graph/badge.svg?token=9QTX90NYYG)](https://codecov.io/gh/wilhelmagren/finq)
 [![CI](https://github.com/wilhelmagren/finq/actions/workflows/ci.yml/badge.svg)](https://github.com/wilhelmagren/finq/actions/workflows/ci.yml)
@@ -20,7 +21,7 @@
 </div>
 
 ## 🔎 Overview
-The goal of *finq* is to provide an all-in-one Python library for **quantitative portfolio analysis and optimization** on historical and real-time financial data. 
+The goal of *finq* is to provide an all-in-one Python library for **quantitative portfolio analysis and optimization** on historical and real-time financial data.
 
 **NOTE:** Features are currently being determined and developed continuously. The repo is undergoing heavy modifications and could introduce **breaking changes** up until first major release. Current version is **v0.2.0**.
 
