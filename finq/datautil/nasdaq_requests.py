@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-14
+Last updated: 2023-10-15
 """
 
 import logging
@@ -74,7 +74,7 @@ def _fetch_names_and_symbols(
 
     url = BASE_URL + index
 
-    weekday_diff = 7 - datetime.today().isoweekday()
+    weekday_diff = max(datetime.today().isoweekday() - 5, 0)
     last_weekday = datetime.date(datetime.today() - timedelta(weekday_diff)).strftime(
         "%Y-%m-%d"
     )
