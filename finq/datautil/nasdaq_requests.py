@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-12
+Last updated: 2023-10-14
 """
 
 import logging
@@ -121,7 +121,9 @@ def _fetch_names_and_symbols(
     log.info("OK!")
 
     if filter_symbols is None:
-        filter_symbols = lambda s: s.replace(" ", "-") + ".ST"
+
+        def filter_symbols(s):
+            return s.replace(" ", "-") + ".ST"
 
     names = df["Company Name"].tolist()
     symbols = list(
