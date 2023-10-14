@@ -289,24 +289,25 @@ class Dataset(object):
             if diff_dates:
                 missed_data.append(symbol)
 
-            _nan_array = np.full((len(diff_dates), len(df.columns)), np.nan)
-            _df_to_append = pd.DataFrame(
-                _nan_array,
-                columns=df.columns,
-                index=list(diff_dates),
-            )
-            df = (
-                pd.concat(
-                    [
-                        df,
-                        _df_to_append,
-                    ]
+                _nan_array = np.full((len(diff_dates), len(df.columns)), np.nan)
+                _df_to_append = pd.DataFrame(
+                    _nan_array,
+                    columns=df.columns,
+                    index=list(diff_dates),
                 )
-                .sort_index()
-                .interpolate()
-            )
 
-            self._data[symbol] = df
+                df = (
+                    pd.concat(
+                        [
+                            df,
+                            _df_to_append,
+                        ]
+                    )
+                    .sort_index()
+                    .interpolate()
+                )
+
+                self._data[symbol] = df
 
         if missed_data:
             log.debug(
