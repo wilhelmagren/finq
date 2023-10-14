@@ -165,5 +165,5 @@ cython_debug/
 # local data store
 .data
 
-# vs code workspece settings
+# vs code workspace settings
 .vscode/

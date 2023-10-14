@@ -21,10 +21,15 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: 'pip'
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup poetry cache
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        run: |
-          python3 -m pip install pip --upgrade
-          python3 -m pip install -r requirements.txt
+        run: poetry install --no-root
       - name: Lint with Ruff
         uses: chartboost/ruff-action@v1
         with:
@@ -47,10 +52,15 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: 'pip'
+      - name: Install Poetry
+        uses: abatilo/actions-poetry@v2
+      - name: Setup poetry cache
+        uses: actions/cache@v3
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        run: |
-          python3 -m pip install pip --upgrade
-          python3 -m pip install -r requirements.txt
+        run: poetry install --no-root
       - name: Format with Black
         uses: psf/black@stable
         with:

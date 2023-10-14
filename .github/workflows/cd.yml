@@ -1,19 +1,16 @@
-name: Tests
+name: CD
 
 on:
-  pull_request:
-  push:
-    branches: [ main ]
+  release:
+    types: [ published ]
 
 jobs:
-  tests:
-    name: Unittest
+  deploy:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ macos-latest, windows-latest, ubuntu-latest ]
-        python: [ '3.10.x' ]
-
+        os: [ ubuntu-latest ]
+        python: [ '3.11.x' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,7 +19,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: 'pip'
-      - name: Install Poetry
+      - name: Install Poetry'
         uses: abatilo/actions-poetry@v2
       - name: Setup poetry cache
         uses: actions/cache@v3
@@ -30,11 +27,9 @@ jobs:
           path: ./.venv
           key: venv-${{ hashFiles('poetry.lock') }}
       - name: Install dependencies
-        run: poetry install --no-root --with dev
-      - name: Run tests
-        run: poetry run coverage run -m pytest tests
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
+        run: poetry install --no-root
+      - name: Build finq
+        run: poetry build --format wheel
+        continue-on-error: false
+      - name: Publish to PyPI
+        run: poetry publish --repository pypi
