@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-11
+Last updated: 2023-10-14
 """
 
 import shutil
@@ -31,7 +31,7 @@ import logging
 import numpy as np
 from pathlib import Path
 
-from finq.datasets.custom import CustomDataset
+from finq.datasets import CustomDataset
 
 log = logging.getLogger(__name__)
 SAVE_PATH = ".data/CUSTOM_COOL/"
@@ -112,32 +112,31 @@ class CustomDatasetTest(unittest.TestCase):
             Path(dataset._save_path).is_dir(),
         )
 
-    def test_fetch_index_data(self):
+    def test_fetch_custom_index(self):
         """ """
         dataset = CustomDataset(
             nasdaq_index="OMXS30",
-            save_path=self._save_path,
+            save_path=".data/OMXS30",
             save=False,
         )
+
+        dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
 
         self.assertEqual(
             dataset._save_path,
             ".data/OMXS30/",
         )
 
-        top_stocks = [
+        tickers = [
             "VOLV-B.ST",
             "ATCO-A.ST",
             "INVE-B.ST",
             "SEB-A.ST",
         ]
 
-        stocks_found_in_index = all([t in dataset.get_tickers() for t in top_stocks])
-        self.assertTrue(stocks_found_in_index)
+        tickers_found_in_index = all([t in dataset.get_tickers() for t in tickers])
+        self.assertTrue(tickers_found_in_index)
 
     def test_all_args_is_none(self):
         """ """
-        try:
-            _ = CustomDataset()
-        except Exception as e:
-            self.assertEqual(type(e), ValueError)
+        self.assertRaises(ValueError, CustomDataset)
