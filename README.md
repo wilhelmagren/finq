@@ -3,6 +3,9 @@
 <div align="left">
 <br/>
 <p align="center">
+<a href="https://github.com/wilhelmagren/finq">
+<img align="center" width=80% src="docs/images/finq-banner.png"></img>
+</a>
 </p>
 </div>
 
@@ -17,8 +20,9 @@
 </div>
 
 ## 🔎 Overview
-The goal of *finq* is to provide an all-in-one Python module for quantiative analysis on
-historical and real-time financial data.
+The goal of *finq* is to provide an all-in-one Python library for **quantitative portfolio analysis and optimization** on historical and real-time financial data. 
+
+**NOTE:** Features are currently being determined and developed continuously. The repo is undergoing heavy modifications and could introduce **breaking changes** up until first major release. Current version is **v0.2.0**.
 
 ## 📦 Installation
 Either clone this repository and perform a local install with [poetry](https://github.com/python-poetry/poetry/tree/master) accordingly
@@ -40,7 +44,7 @@ their related ticker symbols,
 from finq.datasets import CustomDataset
 
 names = ["Alfa Laval", "Boliden", "SEB A", "Sv. Handelsbanken A"]
-symbols = ["AFLA.ST", "BOL.ST", "SEB-A.ST", "SHB-A.ST"]
+symbols = ["ALFA.ST", "BOL.ST", "SEB-A.ST", "SHB-A.ST"]
 
 dataset = CustomDataset(names, symbols, save=True)
 dataset.fetch_data("3y") \
@@ -67,4 +71,3 @@ closing_prices = dataset.as_numpy("Close")
 
 ## 📋 License
 All code is to be held under a general MIT license, please see [LICENSE](https://github.com/wilhelmagren/finq/blob/main/LICENSE) for specific information.
-
