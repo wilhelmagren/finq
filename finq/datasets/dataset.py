@@ -51,6 +51,7 @@ from typing import (
     List,
     Union,
     NoReturn,
+    Literal,
 )
 
 log = logging.getLogger(__name__)
@@ -170,7 +171,14 @@ class Dataset(object):
             bar.set_description(f"Fetching `{symbol}`\t data from Yahoo! Finance")
             ticker = yf.Ticker(symbol, session=session)
             info[symbol] = ticker.info
-            data[symbol] = pd.DataFrame(ticker.history(period=period)["Close"])
+            data[symbol] = pd.DataFrame(
+                ticker.history(period=period)[
+                    "Open",
+                    "High",
+                    "Low",
+                    "Close",
+                ]
+            )
             for date in data[symbol].index:
                 dates[date] = None
 
@@ -315,6 +323,14 @@ class Dataset(object):
         """ """
         return self._data
 
-    def as_numpy(self) -> np.ndarray:
+    def as_numpy(
+        self,
+        series: Literal[
+            "Open",
+            "High",
+            "Low",
+            "Close",
+        ] = "Close",
+    ) -> np.ndarray:
         """ """
-        return np.array([d["Close"] for d in self._data.values()]).astype(np.float32)
+        return np.array([d[series] for d in self._data.values()]).astype(np.float32)
