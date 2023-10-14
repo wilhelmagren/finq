@@ -352,6 +352,8 @@ class Dataset(object):
             "Low",
             "Close",
         ] = "Close",
+        block: bool = False,
+        pause: int = 0,
     ):
         """ """
 
@@ -372,7 +374,9 @@ class Dataset(object):
             plt.savefig(save_path)
             log.debug("OK!")
 
-        plt.show()
+        plt.show(block=block)
+        plt.pause(pause)
+        plt.close()
 
     def get_tickers(self) -> List[str]:
         """ """
