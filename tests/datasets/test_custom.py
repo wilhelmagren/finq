@@ -22,9 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-11
+Last updated: 2023-10-14
 """
 
+import os
 import shutil
 import unittest
 import logging
@@ -73,6 +74,22 @@ class CustomDatasetTest(unittest.TestCase):
             log.info(f"deleting `{path}` recursively...")
             shutil.rmtree(SAVE_PATH)
             log.info("OK!")
+
+    def test_fetch_visualize(self):
+        """ """
+        dataset = CustomDataset(
+            self._names,
+            self._symbols,
+            save_path=self._save_path,
+            save=False,
+        )
+
+        png_path = Path("customplot1984198.png")
+        dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+        dataset.visualize(log_scale=True, save_path=png_path, block=False, pause=0.1)
+
+        self.assertTrue(png_path.exists())
+        os.remove(png_path)
 
     def test_fetch_data_no_save(self):
         """ """
