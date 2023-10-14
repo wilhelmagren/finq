@@ -4,7 +4,7 @@
 <br/>
 <p align="center">
 <a href="https://github.com/wilhelmagren/finq">
-<img align="center" width=75% src="docs/images/finq-banner.png"></img>
+<img align="center" width=75% src="https://github.com/wilhelmagren/finq/blob/6636192f668e45f51d2092b4b0e861e1a61a9af7/docs/images/finq-banner.png"></img>
 </a>
 </p>
 </div>
@@ -12,8 +12,8 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/pyfinq)](https://pypi.org/project/pyfinq)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![codecov](https://codecov.io/gh/wilhelmagren/finq/graph/badge.svg?token=9QTX90NYYG)](https://codecov.io/gh/wilhelmagren/finq)
-
 [![CI](https://github.com/wilhelmagren/finq/actions/workflows/ci.yml/badge.svg)](https://github.com/wilhelmagren/finq/actions/workflows/ci.yml)
+[![CD](https://github.com/wilhelmagren/finq/actions/workflows/cd.yml/badge.svg)](https://github.com/wilhelmagren/finq/actions/workflows/cd.yml)
 [![Tests](https://github.com/wilhelmagren/finq/actions/workflows/tests.yml/badge.svg)](https://github.com/wilhelmagren/finq/actions/workflows/tests.yml)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Lint style: Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
