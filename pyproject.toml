@@ -50,6 +50,15 @@ openpyxl = "^3.1.2"
 numpy = "^1.26.0"
 matplotlib = "^3.8.0"
 
+[tool.poetry.group.dev]
+optional = true
+
+# Dev/test requirements
+[tool.poetry.group.dev.dependencies]
+coverage = "^7.3.2"
+pytest = "^7.4.2"
+
+
 [build-system]
 requires = [ "poetry-core" ]
 build-backend = "poetry.core.masonry.api"
