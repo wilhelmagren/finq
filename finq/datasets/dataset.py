@@ -45,6 +45,7 @@ from pyrate_limiter import (
 from collections import OrderedDict
 from pathlib import Path
 from typing import (
+    Literal,
     Optional,
     Any,
     Dict,
@@ -58,17 +59,7 @@ log = logging.getLogger(__name__)
 
 
 class Dataset(object):
-    """
-
-    Functions
-    ---------
-        fetch_data(self, str, *, int, int, str) -> self
-        fix_missing_data(self) -> self
-        verify_data(self) -> Exception | self
-        run(self, str) -> None
-        visualize(self, *, str, str, str, int, str, bool, str) -> None
-
-    """
+    """ """
 
     def __init__(
         self,
@@ -94,7 +85,6 @@ class Dataset(object):
         if save:
             save_path = Path(save_path)
             log.debug(f"will save fetched data to path `{save_path}`")
-            self._validate_save_path(save_path)
 
         self._save = save
         self._save_path = save_path
@@ -141,15 +131,92 @@ class Dataset(object):
         """ """
         return np.mean((v1, v2))
 
+    def load_local_data(
+        self,
+        separator: Literal[",", ".", ";", ":"] = ";",
+    ) -> Union[FileNotFoundError, NoReturn]:
+        """ """
+
+        path = Path(self._save_path)
+
+        if not path.is_dir():
+            raise FileNotFoundError(
+                "",
+            )
+
+        info_path = path / "info"
+        data_path = path / "data"
+
+        if not info_path.is_dir():
+            raise FileNotFoundError(
+                f"The path `{info_path}` is not an existing directory."
+                f"Maybe you have not yet fetched any data?"
+            )
+
+        if not data_path.is_dir():
+            raise FileNotFoundError(
+                f"The path `{data_path}` is not an existing directory."
+                f"Maybe you have not yet fetched any data?"
+            )
+
+        info = {}
+        data = {}
+        dates = OrderedDict()
+
+        for symbol in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Loading `{symbol}`\t from local path `{path}`")
+
+            try:
+                with open(info_path / f"{symbol}.json", "r") as f:
+                    symbol_info = json.load(f)
+                    info[symbol] = symbol_info
+            except:
+                raise FileNotFoundError(
+                    f"Could not load `{symbol}` from local path `{info_path}`. "
+                    "Perhaps you want have not yet fetched the data?"
+                )
+
+            try:
+                symbol_data = pd.read_csv(
+                    data_path / f"{symbol}.csv",
+                    sep=separator,
+                )
+
+                data[symbol] = symbol_data
+            except:
+                raise FileNotFoundError(
+                    f"Could not load `{symbol}` from local path `{data_path}`. "
+                    "Perhaps you want have not yet fetched the data?"
+                )
+
+            for date in data[symbol].index:
+                dates[date] = None
+
+        self._info = info
+        self._data = data
+        self._dates = list(dates.keys())
+
     def fetch_data(
         self,
         period: str,
         *,
         n_requests: int = 2,
         interval: int = 1,
-        separator: str = ";",
+        separator: Literal[",", ".", ";", ":"] = ";",
     ) -> Dataset:
         """ """
+
+        path = Path(self._save_path)
+        info_path = path / "info"
+        data_path = path / "data"
+
+        if info_path.is_dir() and data_path.is_dir():
+            log.info(
+                f"found local files for `{self.__class__.__name__}`, attempting load..."
+            )
+            self.load_local_data()
+            log.info("OK!")
+            return self
 
         # We combine a requests_cache with rate-limiting to avoid triggering
         # Yahoo's rate-limiter that can otherwise corrupt data. We specify
@@ -185,11 +252,12 @@ class Dataset(object):
                 dates[date] = None
 
         if self._save:
-            # self._save_fetched_data()
+            self._validate_save_path(self._save_path)
             log.debug(f"saving fetched data to `{self._save_path}`")
             for symbol in self._symbols:
                 data[symbol].to_csv(
-                    self._save_path / "data" / f"{symbol}.csv", sep=separator
+                    self._save_path / "data" / f"{symbol}.csv",
+                    sep=separator,
                 )
                 with open(self._save_path / "info" / f"{symbol}.json", "w") as f:
                     json.dump(info[symbol], f)

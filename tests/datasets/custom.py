@@ -116,9 +116,10 @@ class CustomDatasetTest(unittest.TestCase):
         """ """
         dataset = CustomDataset(
             nasdaq_index="OMXS30",
-            save_path=self._save_path,
             save=False,
         )
+
+        dataset.run("1y")
 
         self.assertEqual(
             dataset._save_path,
@@ -135,9 +136,37 @@ class CustomDatasetTest(unittest.TestCase):
         stocks_found_in_index = all([t in dataset.get_tickers() for t in top_stocks])
         self.assertTrue(stocks_found_in_index)
 
+    def test_fetch_then_load(self):
+        """ """
+        dataset = CustomDataset(
+            self._names,
+            self._symbols,
+            save_path=self._save_path,
+            save=True,
+        )
+
+        dataset.run("1y")
+
+        info_path = Path(self._save_path) / "info"
+        data_path = Path(self._save_path) / "data"
+
+        self.assertTrue(info_path.is_dir())
+        self.assertTrue(data_path.is_dir())
+
+        d = CustomDataset(
+            self._names,
+            self._symbols,
+            save_path=self._save_path,
+            save=False,
+        )
+
+        d.fetch_data("1y")
+
+        self.assertEqual(
+            d.get_tickers(),
+            self._symbols,
+        )
+
     def test_all_args_is_none(self):
         """ """
-        try:
-            _ = CustomDataset()
-        except Exception as e:
-            self.assertEqual(type(e), ValueError)
+        self.assertRaises(ValueError, CustomDataset)
