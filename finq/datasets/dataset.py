@@ -52,7 +52,6 @@ from typing import (
     List,
     Union,
     NoReturn,
-    Literal,
 )
 
 log = logging.getLogger(__name__)
@@ -347,12 +346,18 @@ class Dataset(object):
         legend_loc: str = "best",
         log_scale: bool = False,
         save_path: Optional[str] = None,
+        series: Literal[
+            "Open",
+            "High",
+            "Low",
+            "Close",
+        ] = "Close",
     ):
         """ """
 
         for symbol, data in self._data.items():
             plt.plot(
-                np.log(data["Close"]) if log_scale else data["Close"],
+                np.log(data[series]) if log_scale else data[series],
                 label=symbol,
             )
 
