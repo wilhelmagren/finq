@@ -33,7 +33,10 @@ import requests
 import pandas as pd
 
 from requests.exceptions import HTTPError
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+)
 from typing import (
     Union,
     List,
@@ -71,9 +74,13 @@ def _fetch_names_and_symbols(
 
     url = BASE_URL + index
 
-    today = datetime.today().strftime("%Y-%m-%d")
+    weekday_diff = 7 - datetime.today().isoweekday()
+    last_weekday = datetime.date(datetime.today() - timedelta(weekday_diff)).strftime(
+        "%Y-%m-%d"
+    )
+
     params = {
-        "tradeDate": f"{today}T00:00:00.000",
+        "tradeDate": f"{last_weekday}T00:00:00.000",
         "timeOfDay": "SOD",
     }
 
