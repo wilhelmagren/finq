@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-12
+Last updated: 2023-10-14
 """
 
 from __future__ import annotations
@@ -222,38 +222,22 @@ class Dataset(object):
             if diff_dates:
                 missed_data.append(symbol)
 
-            for date in diff_dates:
-                d_idx = self._dates.index(date)
-
-                if d_idx == len(self._dates) - 1:
-                    # we are missing the last date, so we can't interpolate
-                    # with next day, use the two earlier days for reference
-                    v1 = df.iloc[d_idx - 2]["Close"]
-                    v2 = df.iloc[d_idx - 1]["Close"]
-                    interpolated = v2 + (v2 - v1)
-
-                elif d_idx == 0:
-                    # we are missing the first date, so we can't interpolate
-                    # with the earlier day, use the two next days to get a
-                    # somewhat accuracate starting price
-                    v1 = df.iloc[d_idx + 1]["Close"]
-                    v2 = df.iloc[d_idx + 2]["Close"]
-                    interpolated = v1 - (v2 - v1)
-
-                else:
-                    v1 = df.iloc[d_idx - 1]["Close"]
-                    v2 = df.iloc[d_idx + 1]["Close"]
-                    interpolated = self._interpolate_values(v1, v2)
-
-                df = pd.concat(
-                    (
-                        df.iloc[:d_idx],
-                        pd.DataFrame({"Close": interpolated}, index=[date]),
-                        df.iloc[d_idx:],
-                    )
+            _nan_array = np.full((len(diff_dates), len(df.columns)), np.nan)
+            _df_to_append = pd.DataFrame(
+                _nan_array,
+                columns=df.columns,
+                index=list(diff_dates),
+            )
+            df = (
+                pd.concat(
+                    [
+                        df,
+                        _df_to_append,
+                    ]
                 )
-
-                df = df.sort_index()
+                .sort_index()
+                .interpolate()
+            )
 
             self._data[symbol] = df
 
