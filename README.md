@@ -4,7 +4,7 @@
 <br/>
 <p align="center">
 <a href="https://github.com/wilhelmagren/finq">
-<img align="center" width=80% src="docs/images/finq-banner.png"></img>
+<img align="center" width=75% src="docs/images/finq-banner.png"></img>
 </a>
 </p>
 </div>
