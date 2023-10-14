@@ -1,37 +1,62 @@
-[build-system]
-requires = [ 'setuptools>=61.0' ]
-build-backend = 'setuptools.build_meta'
-
-[project]
-name = 'finq'
-version = '0.1.0'
+[tool.poetry]
+name = "pyfinq"
+version = "0.2.0"
+description = "🔬 Enabling seamless quantitative finance solutions."
 authors = [
-    { name='Wilhelm Ågren', email='wilhelmagren98@gmail.com' },
+    "Wilhelm Ågren <wilhelmagren98@gmail.com>",
+    "August Söderlund <email>",
 ]
+license = "MIT"
+readme = "README.md"
 
-description = ''
-readme = 'README.md'
-requires-python = '>=3.7'
+packages = [ {include = "finq" }]
+homepage = "https://github.com/wilhelmagren/finq"
+repository = "https://github.com/wilhelmagren/finq"
+keywords = [
+    "finance",
+    "data-science",
+    "time-series",
+    "data-analysis",
+    "quantiative-finance",
+    "nasdaq",
+    "yahoo-finance",
+]
 classifiers = [
-    'Programming Language :: Python :: 3.7',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'License :: OSI Approved :: MIT License',
-    'Operating System :: OS Independent',
-    'Intended Audience :: Developers',
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
 ]
 
-[project.urls]
-'Homepage' = 'https://github.com/wilhelmagren/finq'
-'Bug tracker' = 'https://github.com/wilhelmagren/finq/issues'
+[tool.poetry.urls]
+"Homepage" = "https://github.com/wilhelmagren/finq"
+"Bug tracker" = "https://github.com/wilhelmagren/finq/issues"
+
+# Requirements
+[tool.poetry.dependencies]
+python = "3.11.5"
+pandas = "^2.1.1"
+numpy = "^1.26.0"
+openpyxl = "^3.1.2"
+requests = "^2.31.0"
+tqdm = "^4.66.1"
+requests-cache = "^1.1.0"
+requests-ratelimiter = "^0.4.2"
+yfinance = "^0.2.31"
+matplotlib = "^3.8.0"
+
+[build-system]
+requires = [ "poetry-core" ]
+build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
-select = [ 'F' ]
-ignore = [ 'E401', 'E501' ]
+target-version = "py310"
+line-length = 89
+ignore = [
+    "E401",  # unused imports, we do this in submodule __init__.py files
+    "E501",  # line too long error, handled by black
+]
 
 [tool.black]
+target-version = [ "py310" ]
 line-length = 89
-target-version = [ 'py310' ]
-exclude = '__init__.py'
