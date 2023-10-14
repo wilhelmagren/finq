@@ -111,3 +111,33 @@ class CustomDatasetTest(unittest.TestCase):
         self.assertTrue(
             Path(dataset._save_path).is_dir(),
         )
+
+    def test_fetch_index_data(self):
+        """ """
+        dataset = CustomDataset(
+            nasdaq_index="OMXS30",
+            save_path=self._save_path,
+            save=False,
+        )
+
+        self.assertEqual(
+            dataset._save_path,
+            ".data/OMXS30/",
+        )
+
+        top_stocks = [
+            "VOLV-B.ST",
+            "ATCO-A.ST",
+            "INVE-B.ST",
+            "SEB-A.ST",
+        ]
+
+        stocks_found_in_index = all([t in dataset.get_tickers() for t in top_stocks])
+        self.assertTrue(stocks_found_in_index)
+
+    def test_all_args_is_none(self):
+        """ """
+        try:
+            _ = CustomDataset()
+        except Exception as e:
+            self.assertEqual(type(e), ValueError)
