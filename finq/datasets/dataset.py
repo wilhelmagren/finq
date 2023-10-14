@@ -173,10 +173,12 @@ class Dataset(object):
             info[symbol] = ticker.info
             data[symbol] = pd.DataFrame(
                 ticker.history(period=period)[
-                    "Open",
-                    "High",
-                    "Low",
-                    "Close",
+                    [
+                        "Open",
+                        "High",
+                        "Low",
+                        "Close",
+                    ]
                 ]
             )
             for date in data[symbol].index:
