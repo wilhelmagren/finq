@@ -4,7 +4,6 @@ version = "0.2.0"
 description = "🔬 Enabling seamless quantitative finance solutions."
 authors = [
     "Wilhelm Ågren <wilhelmagren98@gmail.com>",
-    "August Söderlund <email>",
 ]
 license = "MIT"
 readme = "README.md"
@@ -22,7 +21,10 @@ keywords = [
     "yahoo-finance",
 ]
 classifiers = [
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
@@ -34,15 +36,18 @@ classifiers = [
 
 # Requirements
 [tool.poetry.dependencies]
-python = "3.11.5"
-pandas = "^2.1.1"
-numpy = "^1.26.0"
-openpyxl = "^3.1.2"
+python = ">=3.9,<3.13"
+
 requests = "^2.31.0"
-tqdm = "^4.66.1"
 requests-cache = "^1.1.0"
-requests-ratelimiter = "^0.4.2"
+requests-ratelimiter = "0.4.2"
+pyrate-limiter = "^2.8.0"
 yfinance = "^0.2.31"
+tqdm = "^4.66.1"
+
+pandas = "^2.1.1"
+openpyxl = "^3.1.2"
+numpy = "^1.26.0"
 matplotlib = "^3.8.0"
 
 [build-system]
@@ -55,6 +60,7 @@ line-length = 89
 ignore = [
     "E401",  # unused imports, we do this in submodule __init__.py files
     "E501",  # line too long error, handled by black
+    "E722",  # bare `except`
 ]
 
 [tool.black]
