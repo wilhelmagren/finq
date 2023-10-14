@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-12
+Last updated: 2023-10-14
 """
 
 import logging
@@ -33,7 +33,7 @@ import requests
 import pandas as pd
 
 from requests.exceptions import HTTPError
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import (
     Union,
     List,
@@ -71,7 +71,12 @@ def _fetch_names_and_symbols(
 
     url = BASE_URL + index
 
-    today = datetime.today().strftime("%Y-%m-%d")
+    today = datetime.today()
+    if today.isoweekday() in set((6, 7)):
+        today -= timedelta(days=2)
+
+    today = today.strftime("%Y-%m-%d")
+
     params = {
         "tradeDate": f"{today}T00:00:00.000",
         "timeOfDay": "SOD",

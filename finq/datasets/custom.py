@@ -22,9 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-13
+Last updated: 2023-10-14
 """
 
+import logging
 from finq.datasets.dataset import Dataset
 from finq.datautil import _fetch_names_and_symbols
 
@@ -35,6 +36,8 @@ from typing import (
     Union,
     Optional,
 )
+
+log = logging.getLogger(__name__)
 
 
 class CustomDataset(Dataset):
@@ -54,7 +57,10 @@ class CustomDataset(Dataset):
         if all(map(lambda x: x is None, (names, symbols, nasdaq_index))):
             raise ValueError("all can't be None")
 
-        if nasdaq_index:
+        if isinstance(nasdaq_index, str):
+            log.info(
+                f"trying to create `{self.__class__.__name__}` from `{nasdaq_index}`..."
+            )
             names, symbols = _fetch_names_and_symbols(nasdaq_index)
             save_path = f".data/{nasdaq_index}/"
 
