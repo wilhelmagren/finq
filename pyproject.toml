@@ -13,12 +13,16 @@ homepage = "https://github.com/wilhelmagren/finq"
 repository = "https://github.com/wilhelmagren/finq"
 keywords = [
     "finance",
-    "data-science",
-    "time-series",
-    "data-analysis",
-    "quantiative-finance",
     "nasdaq",
     "yahoo-finance",
+    "data-science",
+    "time-series",
+    "analysis",
+    "optimization",
+    "data-analysis",
+    "quantiative-finance",
+    "portfolio-optimization",
+    "portfolio-management",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.9",
