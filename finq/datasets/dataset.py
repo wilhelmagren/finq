@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-14
+Last updated: 2023-10-15
 """
 
 from __future__ import annotations
@@ -241,6 +241,7 @@ class Dataset(object):
                     ]
                 ]
             )
+
             for date in data[symbol].index:
                 dates[date] = None
 
@@ -347,6 +348,7 @@ class Dataset(object):
             "Low",
             "Close",
         ] = "Close",
+        show: bool = False,
         block: bool = False,
         pause: int = 0,
     ):
@@ -369,9 +371,10 @@ class Dataset(object):
             plt.savefig(save_path)
             log.debug("OK!")
 
-        plt.show(block=block)
-        plt.pause(pause)
-        plt.close()
+        if show:
+            plt.show(block=block)
+            plt.pause(pause)
+            plt.close()
 
     def get_tickers(self) -> List[str]:
         """ """

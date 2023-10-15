@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-12
+Last updated: 2023-10-15
 """
 
 import shutil
@@ -38,7 +38,10 @@ SAVE_PATH = ".data/OMXS30/"
 
 
 class OMXS30Test(unittest.TestCase):
-    """ """
+    """This is the only index that we will not mock. This is relatively small enough
+    so we are not generating a lot of traffic when testing without mock. For all other
+    tests, we should mock.
+    """
 
     def setUp(self):
         """ """
@@ -57,6 +60,7 @@ class OMXS30Test(unittest.TestCase):
 
     def test_fetch_data_no_save(self):
         """ """
+
         dataset = OMXS30(save_path=self._save_path, save=False)
 
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
