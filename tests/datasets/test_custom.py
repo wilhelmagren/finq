@@ -28,7 +28,6 @@ Last updated: 2023-10-15
 import os
 import shutil
 import unittest
-import logging
 import pandas as pd
 import numpy as np
 from unittest.mock import patch, PropertyMock
@@ -41,7 +40,6 @@ from datetime import (
 
 from finq.datasets.custom import CustomDataset
 
-log = logging.getLogger(__name__)
 SAVE_PATH = ".data/CUSTOM_COOL/"
 
 
@@ -60,7 +58,6 @@ class CustomDatasetTest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        log.info(f"setting up `{self.__class__.__name__}`...")
         names = [
             "Alfa Laval",
             "Boliden",
@@ -88,9 +85,7 @@ class CustomDatasetTest(unittest.TestCase):
         path = Path(SAVE_PATH)
 
         if path.is_dir():
-            log.info(f"deleting `{path}` recursively...")
             shutil.rmtree(SAVE_PATH)
-            log.info("OK!")
 
     @patch("yfinance.Ticker.info", new_callable=PropertyMock)
     @patch("yfinance.Ticker.history")

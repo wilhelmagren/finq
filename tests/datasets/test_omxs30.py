@@ -27,26 +27,22 @@ Last updated: 2023-10-15
 
 import shutil
 import unittest
-import logging
 import numpy as np
 from pathlib import Path
 
 from finq.datasets import OMXS30
 
-log = logging.getLogger(__name__)
 SAVE_PATH = ".data/OMXS30/"
 
 
 class OMXS30Test(unittest.TestCase):
-    """This is the only index that we will not mock. This is relatively small enough
+    """NOTE: This is the only index that we will not mock. This is relatively small enough
     so we are not generating a lot of traffic when testing without mock. For all other
     tests, we should mock.
     """
 
     def setUp(self):
         """ """
-        log.info(f"setting up `{self.__class__.__name__}`...")
-
         self._save_path = SAVE_PATH
 
     def tearDown(self):
@@ -54,9 +50,7 @@ class OMXS30Test(unittest.TestCase):
         path = Path(SAVE_PATH)
 
         if path.is_dir():
-            log.info(f"deleting `{path}` recursively...")
             shutil.rmtree(SAVE_PATH)
-            log.info("OK!")
 
     def test_fetch_data_no_save(self):
         """ """
