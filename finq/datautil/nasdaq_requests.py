@@ -25,7 +25,6 @@ File created: 2023-10-12
 Last updated: 2023-10-15
 """
 
-import logging
 import os
 import random
 import string

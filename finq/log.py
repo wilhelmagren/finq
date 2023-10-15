@@ -27,6 +27,7 @@ Last updated: 2023-10-15
 
 import logging
 
+
 def get_module_log(
     name: str,
     extra_name: str = "module_name",

@@ -49,12 +49,13 @@ from typing import (
 # use the function set_logging_level with preferred logging level.
 
 from .log import get_module_log
+
 logging.basicConfig(
     format="[%(asctime)s] [%(module_name)s] [%(levelname)s\t] %(message)s",
 )
 
 log = get_module_log(__name__)
-log.setLevel(os.getenv("LOGLEVEL", logging.WARNING))
+log.setLevel(os.getenv("LOGLEVEL", logging.DEBUG))
 
 
 def set_log_level(

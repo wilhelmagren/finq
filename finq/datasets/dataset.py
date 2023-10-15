@@ -27,7 +27,6 @@ Last updated: 2023-10-15
 
 from __future__ import annotations
 
-import logging
 import json
 import matplotlib.pyplot as plt
 import yfinance as yf
