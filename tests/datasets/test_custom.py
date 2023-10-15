@@ -97,13 +97,6 @@ class CustomDatasetTest(unittest.TestCase):
     def test_fetch_visualize(self, mock_ticker_data, mock_ticker_info):
         """ """
 
-        """
-        # This is nasdaq get request we are mocking, would in the future
-        # have the possibility to only mock the get function and not everything...
-        mock_get.return_value.names = ['LOLHAHA']  # self._names
-        mock_get.return_value.symbols = ['XDSYMBOL.ST']  #self._symbols
-        """
-
         mock_ticker_info.return_value = {
             "funny info about option": "yes very much",
         }
