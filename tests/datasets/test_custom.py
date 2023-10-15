@@ -22,20 +22,37 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-14
+Last updated: 2023-10-15
 """
 
 import os
 import shutil
 import unittest
 import logging
+import pandas as pd
 import numpy as np
+from unittest.mock import patch, PropertyMock
 from pathlib import Path
+from typing import List
+from datetime import (
+    datetime,
+    timedelta,
+)
 
 from finq.datasets.custom import CustomDataset
 
 log = logging.getLogger(__name__)
 SAVE_PATH = ".data/CUSTOM_COOL/"
+
+
+def _random_df(cols: List[str]) -> pd.DataFrame:
+    """ """
+    date_today = datetime.now()
+    days = pd.date_range(date_today, date_today + timedelta(30), freq="D")
+
+    data = np.random.uniform(low=20, high=500, size=(len(days), len(cols)))
+    df = pd.DataFrame(data, columns=cols, index=days)
+    return df
 
 
 class CustomDatasetTest(unittest.TestCase):
@@ -75,8 +92,25 @@ class CustomDatasetTest(unittest.TestCase):
             shutil.rmtree(SAVE_PATH)
             log.info("OK!")
 
-    def test_fetch_visualize(self):
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_visualize(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        """
+        # This is nasdaq get request we are mocking, would in the future
+        # have the possibility to only mock the get function and not everything...
+        mock_get.return_value.names = ['LOLHAHA']  # self._names
+        mock_get.return_value.symbols = ['XDSYMBOL.ST']  #self._symbols
+        """
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
         dataset = CustomDataset(
             self._names,
             self._symbols,
@@ -84,15 +118,27 @@ class CustomDatasetTest(unittest.TestCase):
             save=False,
         )
 
+        self.assertEqual(dataset.get_tickers(), self._symbols)
+
         png_path = Path("customplot1984198.png")
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
-        dataset.visualize(log_scale=True, save_path=png_path, block=False, pause=0.1)
+        dataset.visualize(log_scale=True, save_path=png_path, show=False)
 
         self.assertTrue(png_path.exists())
         os.remove(png_path)
 
-    def test_fetch_data_no_save(self):
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_no_save(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
         dataset = CustomDataset(
             self._names,
             self._symbols,
@@ -109,8 +155,18 @@ class CustomDatasetTest(unittest.TestCase):
 
         self.assertTrue(isinstance(dataset.as_numpy(), np.ndarray))
 
-    def test_fetch_data_save(self):
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_save(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
         dataset = CustomDataset(
             self._names,
             self._symbols,
@@ -129,8 +185,27 @@ class CustomDatasetTest(unittest.TestCase):
             Path(dataset._save_path).is_dir(),
         )
 
-    def test_fetch_index_data(self):
+    @patch("finq.datautil._fetch_names_and_symbols")
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_index_data(self, mock_ticker_data, mock_ticker_info, mock_get):
         """ """
+
+        mock_get.return_value.names = ["VOLVO", "ATCO", "INVESTOR", "SEBANKEN"]
+        mock_get.return_value.symbols = [
+            "VOLV-B.ST",
+            "ATCO-A.ST",
+            "INVE-B.ST",
+            "SEB-A.ST",
+        ]
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
         dataset = CustomDataset(
             nasdaq_index="OMXS30",
             save=False,
@@ -153,8 +228,18 @@ class CustomDatasetTest(unittest.TestCase):
         stocks_found_in_index = all([t in dataset.get_tickers() for t in top_stocks])
         self.assertTrue(stocks_found_in_index)
 
-    def test_fetch_then_load(self):
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_then_load(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
         dataset = CustomDataset(
             self._names,
             self._symbols,
