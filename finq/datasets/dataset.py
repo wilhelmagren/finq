@@ -122,16 +122,9 @@ class Dataset(object):
             info_path.mkdir(parents=False, exist_ok=False)
             log.debug("OK!")
 
-    @staticmethod
-    def _interpolate_values(
-        v1: Union[int, float],
-        v2: Union[int, float],
-    ) -> np.float32:
-        """ """
-        return np.mean((v1, v2))
-
     def load_local_data(
         self,
+        *,
         separator: Literal[",", ".", ";", ":"] = ";",
     ) -> Union[FileNotFoundError, NoReturn]:
         """ """
@@ -163,7 +156,7 @@ class Dataset(object):
         dates = OrderedDict()
 
         for symbol in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Loading `{symbol}`\t from local path `{path}`")
+            bar.set_description(f"Loading ticker `{symbol}` from local path `{path}`")
 
             try:
                 with open(info_path / f"{symbol}.json", "r") as f:
@@ -234,7 +227,7 @@ class Dataset(object):
         dates = OrderedDict()
 
         for symbol in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Fetching `{symbol}`\t data from Yahoo! Finance")
+            bar.set_description(f"Fetching ticker `{symbol}` data from Yahoo! Finance")
             ticker = yf.Ticker(symbol, session=session)
             info[symbol] = ticker.info
             data[symbol] = pd.DataFrame(
@@ -252,7 +245,7 @@ class Dataset(object):
 
         if self._save:
             self._validate_save_path(self._save_path)
-            log.debug(f"saving fetched data to `{self._save_path}`")
+            log.info(f"saving fetched data to `{self._save_path}`...")
             for symbol in self._symbols:
                 data[symbol].to_csv(
                     self._save_path / "data" / f"{symbol}.csv",
@@ -261,7 +254,7 @@ class Dataset(object):
                 with open(self._save_path / "info" / f"{symbol}.json", "w") as f:
                     json.dump(info[symbol], f)
 
-            log.debug("OK!")
+            log.info("OK!")
 
         self._info = info
         self._data = data
@@ -281,7 +274,7 @@ class Dataset(object):
 
         missed_data = []
         for symbol in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Fixing `{symbol}`\t missing values")
+            bar.set_description(f"Fixing ticker `{symbol}` potential missing values")
 
             diff_dates = set(self._dates) - ticker_dates[symbol]
             df = self._data[symbol]
@@ -310,18 +303,18 @@ class Dataset(object):
                 self._data[symbol] = df
 
         if missed_data:
-            log.debug(
+            log.info(
                 f"the following symbols had missing data: `{','.join(missed_data)}`"
             )
-        log.debug("OK!")
+        log.info("OK!")
         return self
 
     def verify_data(self) -> Union[Exception, Dataset]:
         """ """
 
-        log.debug("verifying that stored data has no missing values...")
+        log.info("verifying that stored data has no missing values...")
         for symbol in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Verifying `{symbol}`\t no missing values")
+            bar.set_description(f"Verifying ticker `{symbol}` data")
             dates = set(self._data[symbol].index)
             diff = dates - set(self._dates)
             if diff:
@@ -330,7 +323,7 @@ class Dataset(object):
                     "tried fixing missing values prior to verifying? To do that, run "
                     "dataset.fix_missing_data() with your initialized dataset class."
                 )
-        log.debug("OK!")
+        log.info("OK!")
         return self
 
     def run(self, period: str) -> Union[Exception, NoReturn]:
