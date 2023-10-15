@@ -65,6 +65,7 @@ pytest = "^7.4.2"
 pyclean = "^2.7.5"
 black = "^23.9.1"
 ruff = "^0.0.292"
+pre-commit = "^3.5.0"
 
 
 [build-system]
