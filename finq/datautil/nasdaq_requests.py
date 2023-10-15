@@ -32,6 +32,7 @@ import string
 import requests
 import pandas as pd
 
+from finq.log import get_module_log
 from requests.exceptions import HTTPError
 from datetime import (
     datetime,
@@ -46,7 +47,7 @@ from typing import (
     Callable,
 )
 
-log = logging.getLogger(__name__)
+log = get_module_log(__name__)
 
 BASE_URL = "https://indexes.nasdaqomx.com/Index/ExportWeightings/"
 

@@ -21,51 +21,23 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
+File created: 2023-10-15
 Last updated: 2023-10-15
 """
 
-from finq import datasets  # noqa
-from finq import datautil  # noqa
-
-import numpy as np
-import os
 import logging
-from typing import (
-    Union,
-    Literal,
-)
 
-# Create logger and set up configuration accordingly.
-# Levels in decreasing order of verbosity:
-#   - NOTSET         0
-#   - DEBUG         10
-#   - INFO          20
-#   - WARNING       30
-#   - ERROR         40
-#   - CRITICAL      50
-#
-# To change the logging level after having imported the library,
-# use the function set_logging_level with preferred logging level.
-
-from .log import get_module_log
-logging.basicConfig(
-    format="[%(asctime)s] [%(module_name)s] [%(levelname)s\t] %(message)s",
-)
-
-log = get_module_log(__name__)
-log.setLevel(os.getenv("LOGLEVEL", logging.WARNING))
-
-
-def set_log_level(
-    level: Union[int, Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]],
-):
+def get_module_log(
+    name: str,
+    extra_name: str = "module_name",
+) -> logging.Logger:
     """ """
-    log.debug(f"changing log level to: `{level}`")
-    log.setLevel(level)
+    parts = name.split(".")
+    module_name = parts[0]
+    if len(parts) > 1:
+        module_name += f"..{parts[-1]}" if len(parts) > 2 else f".{parts[1]}"
 
-
-def set_random_seed(seed: int):
-    """ """
-    log.debug(f"setting numpy random seed to: `{seed}`")
-    np.random.seed(seed)
+    return logging.LoggerAdapter(
+        logging.getLogger(name),
+        {extra_name: module_name},
+    )

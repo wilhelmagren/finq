@@ -34,6 +34,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+from finq.log import get_module_log
 from finq.datautil import CachedRateLimiter
 from tqdm import tqdm
 from pyrate_limiter import (
@@ -54,7 +55,7 @@ from typing import (
     NoReturn,
 )
 
-log = logging.getLogger(__name__)
+log = get_module_log(__name__)
 
 
 class Dataset(object):
