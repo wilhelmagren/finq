@@ -22,16 +22,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-12
+Last updated: 2023-10-15
 """
 
 from finq import datasets  # noqa
 from finq import datautil  # noqa
 
 import numpy as np
+import os
 import logging
+from typing import (
+    Union,
+    Literal,
+)
 
-# Create logger and set up configuration
+# Create logger and set up configuration accordingly.
 # Levels in decreasing order of verbosity:
 #   - NOTSET         0
 #   - DEBUG         10
@@ -44,22 +49,26 @@ import logging
 # use the function set_logging_level with preferred logging level.
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log.setLevel(os.getenv("LOGLEVEL", logging.INFO))
 
 console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter("[%(asctime)s] [%(name)s] [%(levelname)s\t] %(message)s")
+formatter = logging.Formatter(
+    "[%(asctime)s] [%(module)s] [%(levelname)s\t] %(message)s",
+)
 
 console_handler.setFormatter(formatter)
 log.addHandler(console_handler)
 
 
-def set_log_level(level: int):
+def set_log_level(
+    level: Union[int, Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]],
+):
     """ """
+    log.debug(f"changing log level to: `{level}`")
     log.setLevel(level)
 
 
 def set_random_seed(seed: int):
     """ """
+    log.debug(f"setting numpy random seed to: `{seed}`")
     np.random.seed(seed)
