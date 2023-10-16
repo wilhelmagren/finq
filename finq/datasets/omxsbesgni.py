@@ -21,14 +21,33 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-10
+File created: 2023-10-16
 Last updated: 2023-10-16
 """
 
-from .custom import CustomDataset  # noqa
-from .dataset import Dataset  # noqa
-from .ndx import NDX  # noqa
-from .omxs30 import OMXS30  # noqa
-from .omxsbesgni import OMXSBESGNI  # noqa
-from .omxspi import OMXSPI  # noqa
-from .snp500 import SNP500  # noqa
+from finq.datasets.dataset import Dataset
+
+from pathlib import Path
+from typing import (
+    Dict,
+    Union,
+)
+
+
+class OMXSBESGNI(Dataset):
+    """OMX Stockholm Benchmark ESG Responsible Net Index."""
+
+    def __init__(
+        self,
+        *,
+        save_path: Union[str, Path] = ".data/OMXSBESGNI/",
+        **kwargs: Dict,
+    ):
+        """ """
+
+        super(OMXSBESGNI, self).__init__(
+            index_name="OMXSBESGNI",
+            market="OMX",
+            save_path=save_path,
+            **kwargs,
+        )

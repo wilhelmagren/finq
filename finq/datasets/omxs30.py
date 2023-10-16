@@ -22,11 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-12
+Last updated: 2023-10-16
 """
 
 from finq.datasets.dataset import Dataset
-from finq.datautil import _fetch_names_and_symbols
 
 from pathlib import Path
 from typing import (
@@ -46,11 +45,9 @@ class OMXS30(Dataset):
     ):
         """ """
 
-        omxs30_names, omxs30_symbols = _fetch_names_and_symbols("OMXS30")
-
         super(OMXS30, self).__init__(
-            omxs30_names,
-            omxs30_symbols,
+            index_name="OMXS30",
+            market="OMX",
             save_path=save_path,
             **kwargs,
         )

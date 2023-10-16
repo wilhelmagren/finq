@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-15
+Last updated: 2023-10-16
 """
 
 from __future__ import annotations
@@ -35,6 +35,7 @@ import numpy as np
 
 from finq.log import get_module_log
 from finq.datautil import CachedRateLimiter
+from finq.datautil import _fetch_names_and_symbols
 from tqdm import tqdm
 from pyrate_limiter import (
     Duration,
@@ -45,8 +46,9 @@ from pyrate_limiter import (
 from collections import OrderedDict
 from pathlib import Path
 from typing import (
-    Literal,
     Optional,
+    Callable,
+    Literal,
     Any,
     Dict,
     List,
@@ -62,15 +64,62 @@ class Dataset(object):
 
     def __init__(
         self,
-        names: List[str],
-        symbols: List[str],
+        names: Optional[List[str]] = None,
+        symbols: Optional[List[str]] = None,
         *,
+        index_name: Optional[str] = None,
+        market: Literal["NASDAQ", "OMX"] = "OMX",
+        n_requests: int = 5,
+        interval: int = 1,
+        proxy: Optional[str] = None,
         save: bool = False,
         save_path: Union[str, Path] = ".data/",
-        missing_values: str = "interpolate",
         **kwargs: Dict[str, Any],
     ) -> Dataset:
         """ """
+
+        log.debug(
+            "creating cached rate-limited session with "
+            f"{n_requests} per {interval} seconds"
+        )
+
+        # We combine a cache with rate-limiting to avoid triggering
+        # Yahoo! Finance's rate-limiter that can otherwise corrupt data.
+        # We specify a maximum number of requests N per X seconds.
+        session = CachedRateLimiter(
+            limiter=Limiter(
+                RequestRate(
+                    n_requests,
+                    Duration.SECOND * interval,
+                ),
+            ),
+        )
+
+        if proxy:
+            session.proxies.update(
+                {
+                    "https": proxy,
+                }
+            )
+
+        self._session = session
+        self._n_requests = n_requests
+        self._interval = interval
+        self._proxy = proxy
+
+        if isinstance(index_name, str):
+            names, symbols = _fetch_names_and_symbols(
+                index_name,
+                market=market,
+                session=session,
+            )
+
+        if not names or not symbols:
+            raise ValueError(
+                "You did not pass in a list of names and symbols, and if you "
+                "passed in an index name to fetch, the request failed since "
+                f"`{names=}` and `{symbols=}`. Did you pass in a valid index name?"
+            )
 
         if not (len(names) == len(symbols)):
             raise ValueError(
@@ -80,6 +129,8 @@ class Dataset(object):
 
         self._names = names
         self._symbols = symbols
+        self._index_name = index_name
+        self._market = market
 
         if save:
             save_path = Path(save_path)
@@ -88,9 +139,9 @@ class Dataset(object):
         self._save = save
         self._save_path = save_path
 
-        # TODO: implement more missing values strategies(?)
-        log.debug(f"will handle missing values according to strategy `{missing_values}`")
-        self._missing_values = missing_values
+    def __getitem__(self, key: str) -> Optional[pd.DataFrame]:
+        """ """
+        return self._data.get(key, None)
 
     @staticmethod
     def _validate_save_path(path: Path) -> Union[Exception, NoReturn]:
@@ -181,6 +232,7 @@ class Dataset(object):
                     "Perhaps you want have not yet fetched the data?"
                 )
 
+            # hack to make the dict with dates ordered
             for date in data[symbol].index:
                 dates[date] = None
 
@@ -210,37 +262,21 @@ class Dataset(object):
             log.info("OK!")
             return self
 
-        # We combine a requests_cache with rate-limiting to avoid triggering
-        # Yahoo's rate-limiter that can otherwise corrupt data. We specify
-        # a maximum number of requests N per X seconds.
-        session = CachedRateLimiter(
-            limiter=Limiter(
-                RequestRate(
-                    n_requests,
-                    Duration.SECOND * interval,
-                )
-            ),
-        )
-
         info = {}
         data = {}
         dates = OrderedDict()
 
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Fetching ticker `{symbol}` data from Yahoo! Finance")
-            ticker = yf.Ticker(symbol, session=session)
+            ticker = yf.Ticker(symbol, session=self._session)
             info[symbol] = ticker.info
             data[symbol] = pd.DataFrame(
-                ticker.history(period=period)[
-                    [
-                        "Open",
-                        "High",
-                        "Low",
-                        "Close",
-                    ]
+                ticker.history(period=period, proxy=self._proxy)[
+                    ["Open", "High", "Low", "Close"]
                 ]
             )
 
+            # hack to make the dict with dates ordered
             for date in data[symbol].index:
                 dates[date] = None
 
@@ -266,9 +302,9 @@ class Dataset(object):
     def fix_missing_data(self) -> Dataset:
         """ """
 
+        log.info("attempting to fix any missing data...")
         ticker_dates = {}
 
-        log.debug(f"using missing values strategy: `{self._missing_values}`")
         for symbol in self._symbols:
             dates = self._data[symbol].index
             ticker_dates[symbol] = set(dates)
@@ -292,10 +328,10 @@ class Dataset(object):
 
                 df = (
                     pd.concat(
-                        [
+                        (
                             df,
                             _df_to_append,
-                        ]
+                        )
                     )
                     .sort_index()
                     .interpolate()
@@ -307,6 +343,7 @@ class Dataset(object):
             log.info(
                 f"the following symbols had missing data: `{','.join(missed_data)}`"
             )
+
         log.info("OK!")
         return self
 
@@ -324,6 +361,7 @@ class Dataset(object):
                     "tried fixing missing values prior to verifying? To do that, run "
                     "dataset.fix_missing_data() with your initialized dataset class."
                 )
+
         log.info("OK!")
         return self
 
@@ -350,12 +388,17 @@ class Dataset(object):
         show: bool = False,
         block: bool = False,
         pause: int = 0,
+        transform: Callable = lambda d: d,
     ):
         """ """
 
+        if log_scale:
+            ylabel += " (log scale)"
+            transform = np.log
+
         for symbol, data in self._data.items():
             plt.plot(
-                np.log(data[series]) if log_scale else data[series],
+                transform(data[series]),
                 label=symbol,
             )
 
@@ -379,7 +422,7 @@ class Dataset(object):
         """ """
         return self._symbols
 
-    def get_data(self) -> Dict[str, pd.Series]:
+    def get_data(self) -> Dict[str, pd.DataFrame]:
         """ """
         return self._data
 
