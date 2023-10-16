@@ -22,17 +22,35 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-13
-Last updated: 2023-10-13
+Last updated: 2023-10-15
 """
 
+import os
 import shutil
 import unittest
-import logging
+import pandas as pd
+import numpy as np
+from unittest.mock import patch, PropertyMock
 from pathlib import Path
+from typing import List
+from datetime import (
+    datetime,
+    timedelta,
+)
 
+from finq.datasets.omxspi import OMXSPI
 
-log = logging.getLogger(__name__)
 SAVE_PATH = ".data/OMXSPI/"
+
+
+def _random_df(cols: List[str]) -> pd.DataFrame:
+    """ """
+    date_today = datetime.now()
+    days = pd.date_range(date_today, date_today + timedelta(30), freq="D")
+
+    data = np.random.uniform(low=20, high=500, size=(len(days), len(cols)))
+    df = pd.DataFrame(data, columns=cols, index=days)
+    return df
 
 
 class OMXSPITest(unittest.TestCase):
@@ -40,15 +58,38 @@ class OMXSPITest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        log.info(f"setting up `{self.__class__.__name__}`...")
-
         self._save_path = SAVE_PATH
 
     def tearDown(self):
         """ """
-        path = Path(SAVE_PATH)
+        path = Path(self._save_path)
 
         if path.is_dir():
-            log.info(f"deleting `{path}` recursively...")
-            shutil.rmtree(SAVE_PATH)
-            log.info("OK!")
+            shutil.rmtree(path)
+
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_save_visualize(self, mock_ticker_data, mock_ticker_info):
+        """ """
+
+        mock_ticker_info.return_value = {
+            "OMXSPI funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
+        dataset = OMXSPI(
+            save_path=self._save_path,
+            save=True,
+        )
+
+        png_path = Path("omxspiPLOT12984198.png")
+        dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+        dataset.visualize(log_scale=False, save_path=png_path, show=False)
+
+        self.assertTrue(
+            Path(dataset._save_path).is_dir(),
+        )
+        self.assertTrue(png_path.exists())
+        os.remove(png_path)

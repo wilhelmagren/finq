@@ -25,13 +25,13 @@ File created: 2023-10-12
 Last updated: 2023-10-15
 """
 
-import logging
 import os
 import random
 import string
 import requests
 import pandas as pd
 
+from finq.log import get_module_log
 from requests.exceptions import HTTPError
 from datetime import (
     datetime,
@@ -46,7 +46,7 @@ from typing import (
     Callable,
 )
 
-log = logging.getLogger(__name__)
+log = get_module_log(__name__)
 
 BASE_URL = "https://indexes.nasdaqomx.com/Index/ExportWeightings/"
 
@@ -87,8 +87,8 @@ def _fetch_names_and_symbols(
     query_params = {**query_params, **params}
 
     log.info(f"performing GET request to: `{url}`")
-    log.info(f"with query parameters: `{query_params}`")
-    log.info(f"with headers: `{headers}`")
+    log.debug(f"with query parameters: `{query_params}`")
+    log.debug(f"with headers: `{headers}`")
 
     response = requests.get(
         url,
@@ -109,7 +109,7 @@ def _fetch_names_and_symbols(
     with open(tmp_xlsx_path, "wb") as f:
         f.write(response.content)
 
-    log.info(f"attempting to read excel at `{tmp_xlsx_path}`...")
+    log.debug(f"attempting to read excel at `{tmp_xlsx_path}`...")
     df = pd.read_excel(
         tmp_xlsx_path,
         names=("Company Name", "Security Symbol"),
@@ -118,7 +118,7 @@ def _fetch_names_and_symbols(
     ).dropna()
 
     os.remove(tmp_xlsx_path)
-    log.info("OK!")
+    log.debug("OK!")
 
     if filter_symbols is None:
 

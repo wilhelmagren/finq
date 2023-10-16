@@ -1,33 +1,26 @@
-.PHONY: clear-pycache
-clear-pycache:
-	./scripts/cc.sh
+.PHONY: clean
+clean:
+	poetry run pyclean finq tests
 
-.PHONY: pip-install
-pip-install:
-	python3 -m pip install -r requirements.txt
+.PHONY: install
+install:
+	poetry install --with dev --no-root
 
 .PHONY: test
 test:
-	python3 -m unittest
+	poetry run pytest tests
 
 .PHONY: build
 build:
-	python3 -m pip install pip --upgrade
-	python3 -m pip install build --upgrade
-	python3 -m build
+	poetry build --format wheel
 
 .PHONY: format
 format:
-	python3 -m black finq
+	poetry run black finq tests
 
 .PHONY: lint
 lint:
-	ruff check --output-format=github --target-version=py310 . --fix
-
-.PHONY: pre-commit
-pre-commit:
-	pre-commit run --all-files
+	poetry run ruff check finq tests --fix
 
 .PHONY: clean-test
-clean-test: clear-pycache unittest
-
+clean-test: clean test
