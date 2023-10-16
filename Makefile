@@ -22,5 +22,9 @@ format:
 lint:
 	poetry run ruff check finq tests --fix
 
+.PHONY: static-check
+static-check:
+	poetry run mypy finq
+
 .PHONY: clean-test
 clean-test: clean test
