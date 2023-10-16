@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "pyfinq"
-version = "0.2.0"
-description = "🔬 Enabling seamless quantitative finance solutions."
+version = "0.2.1"
+description = "🔬 Quantitative analysis and management for financial applications. "
 authors = [
     "Wilhelm Ågren <wilhelmagren98@gmail.com>",
 ]
