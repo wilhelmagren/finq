@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-15
+Last updated: 2023-10-16
 """
 
 import os
@@ -41,6 +41,7 @@ from typing import (
     Union,
     List,
     Dict,
+    Literal,
     Tuple,
     Optional,
     Callable,
@@ -50,26 +51,29 @@ log = get_module_log(__name__)
 
 BASE_URL = "https://indexes.nasdaqomx.com/Index/ExportWeightings/"
 
-SUPPORTED_INDEX = (
-    "OMXS30",
-    "OMXSPI",
+IMPLEMENTED_INDEX = (
     "NDX",
+    "OMXS30",
+    "OMXSBESGNI",
+    "OMXSPI",
 )
 
 
 def _fetch_names_and_symbols(
     index: str,
     *,
+    session: Optional[requests.Session] = None,
     query_params: Dict = {},
     headers: Dict = {},
-    filter_symbols: Optional[Callable] = None,
+    market: Literal["NASDAQ", "OMX"] = "OMX",
+    filter_symbols: Callable = lambda s: s,
 ) -> Union[Exception, Tuple[List[str], List[str]]]:
     """ """
 
-    if index not in SUPPORTED_INDEX:
-        raise ValueError(
-            f"`{index}` is not a currently supported index, did you mean ",
-            f"one of the following? `{','.join(SUPPORTED_INDEX)}`",
+    if index not in IMPLEMENTED_INDEX:
+        log.warning(
+            f"`{index}` is not a natively implemented index, will attempt "
+            f"to fetch from NASDAQ, but be prepared for failures..."
         )
 
     url = BASE_URL + index
@@ -90,16 +94,17 @@ def _fetch_names_and_symbols(
     log.debug(f"with query parameters: `{query_params}`")
     log.debug(f"with headers: `{headers}`")
 
-    response = requests.get(
+    if session is None:
+        session = requests
+
+    response = session.get(
         url,
         params=query_params,
         headers=headers,
     )
 
     if response.status_code != 200:
-        raise HTTPError(
-            f"Could not get the index components from nasdaq, {response}",
-        )
+        raise HTTPError(f"Could not get the index components from nasdaq, {response}")
 
     log.info(f"{response.status_code} OK")
 
@@ -120,7 +125,7 @@ def _fetch_names_and_symbols(
     os.remove(tmp_xlsx_path)
     log.debug("OK!")
 
-    if filter_symbols is None:
+    if market == "OMX":
 
         def filter_symbols(s):
             return s.replace(" ", "-") + ".ST"

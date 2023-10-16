@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-15
+Last updated: 2023-10-16
 """
 
 import os
@@ -78,6 +78,7 @@ class CustomDatasetTest(unittest.TestCase):
 
         self._names = names
         self._symbols = symbols
+        self._market = "OMX"
         self._save_path = SAVE_PATH
 
     def tearDown(self):
@@ -102,6 +103,7 @@ class CustomDatasetTest(unittest.TestCase):
         dataset = CustomDataset(
             self._names,
             self._symbols,
+            market=self._market,
             save_path=self._save_path,
             save=False,
         )
@@ -130,6 +132,7 @@ class CustomDatasetTest(unittest.TestCase):
         dataset = CustomDataset(
             self._names,
             self._symbols,
+            market=self._market,
             save_path=self._save_path,
             save=False,
         )
@@ -158,6 +161,7 @@ class CustomDatasetTest(unittest.TestCase):
         dataset = CustomDataset(
             self._names,
             self._symbols,
+            market=self._market,
             save_path=self._save_path,
             save=True,
         )
@@ -195,7 +199,8 @@ class CustomDatasetTest(unittest.TestCase):
         mock_ticker_data.return_value = df
 
         dataset = CustomDataset(
-            nasdaq_index="OMXS30",
+            index_name="OMXS30",
+            market=self._market,
             save=False,
         )
 
@@ -231,6 +236,7 @@ class CustomDatasetTest(unittest.TestCase):
         dataset = CustomDataset(
             self._names,
             self._symbols,
+            market=self._market,
             save_path=self._save_path,
             save=True,
         )
@@ -246,6 +252,7 @@ class CustomDatasetTest(unittest.TestCase):
         d = CustomDataset(
             self._names,
             self._symbols,
+            market=self._market,
             save_path=self._save_path,
             save=False,
         )

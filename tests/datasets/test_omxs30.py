@@ -22,12 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-15
+Last updated: 2023-10-16
 """
 
 import shutil
 import unittest
 import numpy as np
+import pandas as pd
 from pathlib import Path
 
 from finq.datasets import OMXS30
@@ -58,7 +59,9 @@ class OMXS30Test(unittest.TestCase):
         dataset = OMXS30(save_path=self._save_path, save=False)
 
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+        df = dataset["SHB-A.ST"]
 
+        self.assertTrue(isinstance(df, pd.DataFrame))
         self.assertTrue(isinstance(dataset.as_numpy(), np.ndarray))
 
     def test_fetch_data_save(self):

@@ -1060,6 +1060,7 @@ class SNP500(Dataset):
         super(SNP500, self).__init__(
             snp500_names,
             snp500_symbols,
+            market="NASDAQ",
             save_path=save_path,
             **kwargs,
         )
