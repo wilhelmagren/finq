@@ -22,18 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-16
+Last updated: 2023-10-18
 """
 
 from __future__ import annotations
 
+import logging
 import json
 import matplotlib.pyplot as plt
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
-from finq.log import get_module_log
 from finq.datautil import CachedRateLimiter
 from finq.datautil import _fetch_names_and_symbols
 from tqdm import tqdm
@@ -56,7 +56,7 @@ from typing import (
     NoReturn,
 )
 
-log = get_module_log(__name__)
+log = logging.getLogger(__name__)
 
 
 class Dataset(object):
@@ -385,9 +385,8 @@ class Dataset(object):
             "Low",
             "Close",
         ] = "Close",
-        show: bool = False,
-        block: bool = False,
-        pause: int = 0,
+        show: bool = True,
+        block: bool = True,
         transform: Callable = lambda d: d,
     ):
         """ """
@@ -415,7 +414,6 @@ class Dataset(object):
 
         if show:
             plt.show(block=block)
-            plt.pause(pause)
             plt.close()
 
     def get_tickers(self) -> List[str]:
