@@ -22,15 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-15
+Last updated: 2023-10-18
 """
 
 from finq import datasets  # noqa
 from finq import datautil  # noqa
+from .__version__ import __version__  # noqa
 
 import numpy as np
 import os
 import logging
+from pathlib import Path
 from typing import (
     Union,
     Literal,
@@ -48,14 +50,35 @@ from typing import (
 # To change the logging level after having imported the library,
 # use the function set_logging_level with preferred logging level.
 
-from .log import get_module_log
+from .log import ColoredFormatter
 
-logging.basicConfig(
-    format="[%(asctime)s] [%(module_name)s] [%(levelname)s\t] %(message)s",
+log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOGLEVEL", logging.INFO))
+
+console_handler = logging.StreamHandler()
+console_handler.setLevel(os.getenv("LOGLEVEL", logging.INFO))
+
+console_handler.setFormatter(
+    ColoredFormatter(
+        "[%(asctime)s] [ %(levelname)s ]\t%(message)s",
+    )
 )
+log.addHandler(console_handler)
 
-log = get_module_log(__name__)
-log.setLevel(os.getenv("LOGLEVEL", logging.DEBUG))
+
+def log_to_file(fname: str = ".finq.log"):
+    """ """
+    log.debug(f"creating log file handler: `{fname}`")
+    f_path = Path(fname)
+    if f_path.exists():
+        log.warning(
+            "setting file handler log to existing file, "
+            "this might produce multiple log entries!"
+        )
+
+    file_handler = logging.FileHandler(fname)
+    file_handler.setLevel(log.level)
+    log.addHandler(file_handler)
 
 
 def set_log_level(
@@ -64,6 +87,8 @@ def set_log_level(
     """ """
     log.debug(f"changing log level to: `{level}`")
     log.setLevel(level)
+    for handler in log.handlers:
+        handler.setLevel(level)
 
 
 def set_random_seed(seed: int):

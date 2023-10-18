@@ -22,16 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-16
+Last updated: 2023-10-18
 """
 
+import logging
 import os
 import random
 import string
 import requests
 import pandas as pd
 
-from finq.log import get_module_log
 from requests.exceptions import HTTPError
 from datetime import (
     datetime,
@@ -47,7 +47,7 @@ from typing import (
     Callable,
 )
 
-log = get_module_log(__name__)
+log = logging.getLogger(__name__)
 
 BASE_URL = "https://indexes.nasdaqomx.com/Index/ExportWeightings/"
 
