@@ -27,6 +27,8 @@ Last updated: 2023-10-21
 
 from finq import datasets  # noqa
 from finq import datautil  # noqa
+from .asset import Asset  # noqa
+from .portfolio import Portfolio  # noqa
 from .__version__ import __version__  # noqa
 
 import numpy as np

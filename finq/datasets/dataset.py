@@ -588,7 +588,7 @@ class Dataset(object):
         """
         return self._data
 
-    def as_assets(self, *, price_type: str = "Close") -> List[Asset]:
+    def as_assets(self, price_type: str = "Close") -> Dict[str, Asset]:
         """
         Create a list of Assets for each ticker and specified price type.
 
@@ -600,22 +600,22 @@ class Dataset(object):
 
         Returns
         -------
-        list
-            A list of newly created ``Asset`` objects.
+        dict
+            A dictionary of newly created ``Asset`` objects with ticker symbols as keys.
 
         """
-        return [
-            Asset(
-                self._data[ticker],
+        return {
+            ticker: Asset(
+                self._data[ticker][price_type],
                 self._names[i],
-                price_type=price_type,
                 market=self._market,
                 index_name=self._index_name,
+                price_type=price_type,
             )
             for i, ticker in enumerate(self._symbols)
-        ]
+        }
 
-    def as_df(self, *, price_type: str = "Close") -> pd.DataFrame:
+    def as_df(self, price_type: str = "Close") -> pd.DataFrame:
         """
         Create an aggregated ``pd.DataFrame`` for the specified price type.
         It will have the shape (n_samples, n_tickers).

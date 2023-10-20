@@ -22,11 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-20
-Last updated: 2023-10-20
+Last updated: 2023-10-21
 """
 
 import logging
-from finq.datasets import Dataset
 
 log = logging.getLogger(__name__)
 
@@ -36,9 +35,8 @@ class Portfolio(object):
 
     def __init__(
         self,
-        dataset: Dataset,
+        *args,
+        **kwargs,
     ):
         """ """
-
-        self._dataset = dataset
-        self._ticker_data = dataset.get_data()
+        pass

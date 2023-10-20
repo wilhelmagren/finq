@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-18
-Last updated: 2023-10-20
+Last updated: 2023-10-21
 """
 
 import logging
@@ -42,9 +42,9 @@ class Asset(object):
         data: pd.Series,
         name: str,
         *,
-        price_type: str = "Close",
         market: Optional[str] = None,
         index_name: Optional[str] = None,
+        price_type: str = "Close",
     ):
         """ """
 
@@ -52,3 +52,4 @@ class Asset(object):
         self._name = name
         self._market = market
         self._index_name = index_name
+        self._price_type = price_type
