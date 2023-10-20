@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-19
+Last updated: 2023-10-21
 """
 
 import shutil
@@ -32,6 +32,7 @@ from pathlib import Path
 
 from .mock_df import _random_df
 from finq.datasets import NDX
+from finq import Asset
 
 SAVE_PATH = ".data/NDX/"
 
@@ -88,3 +89,25 @@ class NDXTest(unittest.TestCase):
             len(d["AMD"].index.values),
             len(n.get_data()["AMD"].index.values),
         )
+
+    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.history")
+    def test_fetch_then_as_assets(self, mock_ticker_data, mock_ticker_info):
+        """ """
+
+        mock_ticker_info.return_value = {
+            "funny info about option": "yes very much",
+        }
+
+        df = _random_df(["Open", "High", "Low", "Close"])
+        mock_ticker_data.return_value = df
+
+        d = NDX(n_requests=2, t_interval=2, separator=",")
+        d.run("6m")
+
+        assets = d.as_assets("Close")
+        for t, a in assets.items():
+            self.assertTrue(isinstance(a, Asset))
+            self.assertTrue(t in d.get_tickers())
+
+        self.assertEqual(len(d.get_data().values()), len(assets.values()))
