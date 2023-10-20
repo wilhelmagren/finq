@@ -22,35 +22,19 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-13
-Last updated: 2023-10-15
+Last updated: 2023-10-19
 """
 
 import os
 import shutil
 import unittest
-import pandas as pd
-import numpy as np
 from unittest.mock import patch, PropertyMock
 from pathlib import Path
-from typing import List
-from datetime import (
-    datetime,
-    timedelta,
-)
 
+from .mock_df import _random_df
 from finq.datasets.omxspi import OMXSPI
 
 SAVE_PATH = ".data/OMXSPI/"
-
-
-def _random_df(cols: List[str]) -> pd.DataFrame:
-    """ """
-    date_today = datetime.now()
-    days = pd.date_range(date_today, date_today + timedelta(30), freq="D")
-
-    data = np.random.uniform(low=20, high=500, size=(len(days), len(cols)))
-    df = pd.DataFrame(data, columns=cols, index=days)
-    return df
 
 
 class OMXSPITest(unittest.TestCase):

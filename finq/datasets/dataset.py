@@ -22,18 +22,18 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-16
+Last updated: 2023-10-19
 """
 
 from __future__ import annotations
 
+import logging
 import json
 import matplotlib.pyplot as plt
 import yfinance as yf
 import pandas as pd
 import numpy as np
 
-from finq.log import get_module_log
 from finq.datautil import CachedRateLimiter
 from finq.datautil import _fetch_names_and_symbols
 from tqdm import tqdm
@@ -43,7 +43,6 @@ from pyrate_limiter import (
     Limiter,
 )
 
-from collections import OrderedDict
 from pathlib import Path
 from typing import (
     Optional,
@@ -56,7 +55,7 @@ from typing import (
     NoReturn,
 )
 
-log = get_module_log(__name__)
+log = logging.getLogger(__name__)
 
 
 class Dataset(object):
@@ -144,6 +143,17 @@ class Dataset(object):
         return self._data.get(key, None)
 
     @staticmethod
+    def _save_data(data: pd.DataFrame, path: Union[Path, str], separator: str = ";"):
+        """ """
+        data.to_csv(path, sep=separator)
+
+    @staticmethod
+    def _save_info(info: dict, path: Union[Path, str], mode: str = "w"):
+        """ """
+        with open(path, mode) as f:
+            json.dump(info, f)
+
+    @staticmethod
     def _validate_save_path(path: Path) -> Union[Exception, NoReturn]:
         """ """
 
@@ -204,7 +214,8 @@ class Dataset(object):
 
         info = {}
         data = {}
-        dates = OrderedDict()
+        dates = {}
+        all_dates = []
 
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Loading ticker `{symbol}` from local path `{path}`")
@@ -232,13 +243,13 @@ class Dataset(object):
                     "Perhaps you want have not yet fetched the data?"
                 )
 
-            # hack to make the dict with dates ordered
-            for date in data[symbol].index:
-                dates[date] = None
+            dates[symbol] = data[symbol]["Date"].tolist()
+            all_dates.extend(dates[symbol])
 
         self._info = info
         self._data = data
-        self._dates = list(dates.keys())
+        self._dates = dates
+        self._all_dates = all_dates
 
     def fetch_data(
         self,
@@ -264,38 +275,46 @@ class Dataset(object):
 
         info = {}
         data = {}
-        dates = OrderedDict()
+        dates = {}
+        all_dates = []
 
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Fetching ticker `{symbol}` data from Yahoo! Finance")
+
             ticker = yf.Ticker(symbol, session=self._session)
             info[symbol] = ticker.info
-            data[symbol] = pd.DataFrame(
-                ticker.history(period=period, proxy=self._proxy)[
-                    ["Open", "High", "Low", "Close"]
-                ]
-            )
+            df = ticker.history(
+                period=period,
+                proxy=self._proxy,
+            ).reset_index()
 
-            # hack to make the dict with dates ordered
-            for date in data[symbol].index:
-                dates[date] = None
+            data[symbol] = df[["Date", "Open", "High", "Low", "Close"]]
+            dates[symbol] = data[symbol]["Date"].tolist()
+            all_dates.extend(dates[symbol])
 
         if self._save:
             self._validate_save_path(self._save_path)
             log.info(f"saving fetched data to `{self._save_path}`...")
             for symbol in self._symbols:
-                data[symbol].to_csv(
+                self._save_data(
+                    data[symbol],
                     self._save_path / "data" / f"{symbol}.csv",
-                    sep=separator,
                 )
-                with open(self._save_path / "info" / f"{symbol}.json", "w") as f:
-                    json.dump(info[symbol], f)
+
+                self._save_info(
+                    info[symbol],
+                    self._save_path / "info" / f"{symbol}.json",
+                )
 
             log.info("OK!")
 
+        unique_dates = pd.DataFrame({"Date": list(set(all_dates))})
+        all_dates = unique_dates.sort_values(by="Date", ascending=True)["Date"].tolist()
+
         self._info = info
         self._data = data
-        self._dates = list(dates.keys())
+        self._dates = dates
+        self._all_dates = all_dates
 
         return self
 
@@ -303,46 +322,46 @@ class Dataset(object):
         """ """
 
         log.info("attempting to fix any missing data...")
-        ticker_dates = {}
-
-        for symbol in self._symbols:
-            dates = self._data[symbol].index
-            ticker_dates[symbol] = set(dates)
 
         missed_data = []
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Fixing ticker `{symbol}` potential missing values")
 
-            diff_dates = set(self._dates) - ticker_dates[symbol]
+            diff_dates = set(self._all_dates) - set(self._dates[symbol])
             df = self._data[symbol]
 
             if diff_dates:
                 missed_data.append(symbol)
+                df_missed = pd.DataFrame({"Date": list(diff_dates)})
 
-                _nan_array = np.full((len(diff_dates), len(df.columns)), np.nan)
-                _df_to_append = pd.DataFrame(
-                    _nan_array,
-                    columns=df.columns,
-                    index=list(diff_dates),
-                )
+                df_fixed = pd.concat((df, df_missed), axis=0)
+                df_fixed = df_fixed.sort_values("Date", ascending=True).reset_index()
+                df_fixed[["Open", "High", "Low", "Close"]] = df_fixed[
+                    ["Open", "High", "Low", "Close"]
+                ].interpolate()
 
-                df = (
-                    pd.concat(
-                        (
-                            df,
-                            _df_to_append,
-                        )
-                    )
-                    .sort_index()
-                    .interpolate()
-                )
+                if df_fixed[df_fixed.isnull().any(axis=1)].index.values.size > 0:
+                    log.error("failed to interpolate prices for missing dates!")
 
-                self._data[symbol] = df
+                self._data[symbol] = df_fixed
+                self._dates[symbol] = self._all_dates
 
         if missed_data:
             log.info(
                 f"the following symbols had missing data: `{','.join(missed_data)}`"
             )
+            if self._save:
+                log.info(f"saving fixed data to `{self._save_path}`...")
+                for symbol in self._symbols:
+                    self._save_data(
+                        self._data[symbol],
+                        self._save_path / "data" / f"{symbol}.csv",
+                    )
+
+                    self._save_info(
+                        self._info[symbol],
+                        self._save_path / "info" / f"{symbol}.json",
+                    )
 
         log.info("OK!")
         return self
@@ -353,8 +372,10 @@ class Dataset(object):
         log.info("verifying that stored data has no missing values...")
         for symbol in (bar := tqdm(self._symbols)):
             bar.set_description(f"Verifying ticker `{symbol}` data")
-            dates = set(self._data[symbol].index)
-            diff = dates - set(self._dates)
+
+            dates = set(self._data[symbol]["Date"].tolist())
+            diff = dates - set(self._all_dates)
+
             if diff:
                 raise ValueError(
                     f"There is a difference in dates for symbol `{symbol}`, have you "
@@ -385,9 +406,8 @@ class Dataset(object):
             "Low",
             "Close",
         ] = "Close",
-        show: bool = False,
-        block: bool = False,
-        pause: int = 0,
+        show: bool = True,
+        block: bool = True,
         transform: Callable = lambda d: d,
     ):
         """ """
@@ -415,7 +435,6 @@ class Dataset(object):
 
         if show:
             plt.show(block=block)
-            plt.pause(pause)
             plt.close()
 
     def get_tickers(self) -> List[str]:
@@ -426,6 +445,23 @@ class Dataset(object):
         """ """
         return self._data
 
+    def as_df(
+        self,
+        series: Literal[
+            "Open",
+            "High",
+            "Low",
+            "Close",
+        ] = "Close",
+    ) -> pd.DataFrame:
+        """Create one aggregated dataframe for the specified series."""
+        return pd.DataFrame(
+            {
+                ticker: data[series]
+                for ticker, data in zip(self._symbols, self._data.values())
+            }
+        )
+
     def as_numpy(
         self,
         series: Literal[
@@ -435,5 +471,5 @@ class Dataset(object):
             "Close",
         ] = "Close",
     ) -> np.ndarray:
-        """ """
+        """Extract all stored pd.Series objects and cast them to np.ndarray."""
         return np.array([d[series] for d in self._data.values()]).astype(np.float32)
