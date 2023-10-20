@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-19
+Last updated: 2023-10-20
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+from finq import Asset
 from finq.datautil import CachedRateLimiter
 from finq.datautil import _fetch_names_and_symbols
 from tqdm import tqdm
@@ -48,11 +49,9 @@ from typing import (
     Optional,
     Callable,
     Literal,
-    Any,
     Dict,
     List,
     Union,
-    NoReturn,
 )
 
 log = logging.getLogger(__name__)
@@ -66,14 +65,13 @@ class Dataset(object):
         names: Optional[List[str]] = None,
         symbols: Optional[List[str]] = None,
         *,
+        market: str = "OMX",
         index_name: Optional[str] = None,
-        market: Literal["NASDAQ", "OMX"] = "OMX",
         n_requests: int = 5,
         interval: int = 1,
         proxy: Optional[str] = None,
         save: bool = False,
         save_path: Union[str, Path] = ".data/",
-        **kwargs: Dict[str, Any],
     ) -> Dataset:
         """ """
 
@@ -128,8 +126,8 @@ class Dataset(object):
 
         self._names = names
         self._symbols = symbols
-        self._index_name = index_name
         self._market = market
+        self._index_name = index_name
 
         if save:
             save_path = Path(save_path)
@@ -144,17 +142,39 @@ class Dataset(object):
 
     @staticmethod
     def _save_data(data: pd.DataFrame, path: Union[Path, str], separator: str = ";"):
-        """ """
+        """
+        Save the historical price data for a ticker to a local csv file.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The ``pd.DataFrame`` to save as a csv file.
+        path : Path | str
+            The local file name to save the csv to.
+        separator : str
+            The csv separator to use when saving the data. Defaults to ``;``.
+
+        """
         data.to_csv(path, sep=separator)
 
     @staticmethod
-    def _save_info(info: dict, path: Union[Path, str], mode: str = "w"):
-        """ """
-        with open(path, mode) as f:
+    def _save_info(info: dict, path: Union[Path, str]):
+        """
+        Save the ticker information dictionary to a local file as a ``json`` object.
+
+        Parameters
+        ----------
+        info : dict
+            The ticker information dictionary to save as a ``json`` file.
+        path : Path | str
+            The local file name to save the dictionary to.
+
+        """
+        with open(path, "w") as f:
             json.dump(info, f)
 
     @staticmethod
-    def _validate_save_path(path: Path) -> Union[Exception, NoReturn]:
+    def _validate_save_path(path: Path) -> Union[Exception, None]:
         """ """
 
         log.debug(f"validating `{path}` path...")
@@ -187,7 +207,7 @@ class Dataset(object):
         self,
         *,
         separator: Literal[",", ".", ";", ":"] = ";",
-    ) -> Union[FileNotFoundError, NoReturn]:
+    ) -> Union[FileNotFoundError, None]:
         """ """
 
         path = Path(self._save_path)
@@ -366,65 +386,143 @@ class Dataset(object):
         log.info("OK!")
         return self
 
-    def verify_data(self) -> Union[Exception, Dataset]:
-        """ """
+    def verify_data(self) -> Union[ValueError, Dataset]:
+        """
+        Tries to verify that the stored data does not contain any missing values.
+        This is performed by comparing the dates in each ticker ``pd.DataFrame``
+        with the known set of all fetched dates.
+
+        Returns
+        -------
+        Dataset
+            The initialized instance of ``self``.
+
+        Raises
+        ------
+        ValueError
+            If there exists missing values in any stored ``pd.DataFrame``.
+
+        """
 
         log.info("verifying that stored data has no missing values...")
-        for symbol in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Verifying ticker `{symbol}` data")
+        for symbol in (bar := tqdm(self._tickers)):
+            bar.set_description(f"Verifying ticker {symbol} data")
 
             dates = set(self._data[symbol]["Date"].tolist())
-            diff = dates - set(self._all_dates)
+            diff = dates - set(self._fetched_dates)
 
             if diff:
                 raise ValueError(
                     f"There is a difference in dates for symbol `{symbol}`, have you "
                     "tried fixing missing values prior to verifying? To do that, run "
-                    "dataset.fix_missing_data() with your initialized dataset class."
+                    "dataset.fix_missing_data() with your initialized Dataset class."
                 )
 
         log.info("OK!")
         return self
 
-    def run(self, period: str) -> Union[Exception, NoReturn]:
-        """ """
-        self.fetch_data(period).fix_missing_data().verify_data()
+    def run(self, period: str = "1y") -> Union[FileNotFoundError, ValueError, Dataset]:
+        """
+        Call the three core methods for the ``Dataset`` class which fetches data,
+        tries to fix missing values, and lastly verifies that there is no missing data.
+
+        Parameters
+        ----------
+        period : str
+            The time period to try and fetch data from. Valid values are (``1d``,
+            ``5d``, ``1mo``, ``3mo``, ``6mo``, ``1y``, ``2y``, ``5y``, ``10y``,
+            ``ytd``, ``max``). Defaults to ``1y``.
+
+        Returns
+        -------
+        Dataset
+            The intialized instance of ``self``.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the function ``load_local_data()`` fails to find the local data
+            filepaths for the initialized dataset. This can only occur if you
+            call ``fetch_data(period)`` with locally saved data and the paths
+            are removed during the function call.
+
+        ValueError
+            If the data is not valid when calling ``verify_data()``, i.e., it contains
+            missing values.
+
+        """
+        return self.fetch_data(period).fix_missing_data().verify_data()
 
     def visualize(
         self,
         *,
         title: str = "Historical stock data",
-        xlabel: Optional[str] = None,
+        xlabel: str = "Dates",
         ylabel: str = "Closing price [$]",
         ticks_rotation: int = 80,
         legend_loc: str = "best",
         log_scale: bool = False,
         save_path: Optional[str] = None,
-        series: Literal[
-            "Open",
-            "High",
-            "Low",
-            "Close",
-        ] = "Close",
+        price_type: str = "Close",
         show: bool = True,
         block: bool = True,
-        transform: Callable = lambda d: d,
+        data_transform: Optional[Callable] = None,
     ):
-        """ """
+        """
+        Plot the historical ticker data.
+
+        Parameters
+        ----------
+        title : str
+            The header title to set on the generated plot.
+        xlabel : str
+            The label to use for the x-axis.
+        ylabel : str
+            The label to use for the y-axis.
+        ticks_rotation : int
+            The amount of degrees to rotate the x-axis ticks with. Defaults to ``80``.
+        legend_loc : str
+            The location of the legend. Some possible values are (``best``, ``center``,
+            ``upper left``, ``upper right``, ``lower left``, ``lower right``).
+            Defaults to ``best``.
+        log_scale : bool
+            ``True`` if the historical data should be log scaled, otherwise ``False``.
+        save_path : str | None
+            The local file to save the generated plot to. Does not save the plot if
+            the argument is ``None``.
+        price_type : str
+            The price type of the historical data to plot. Has to be one
+            of (``Open``, ``High``, ``Low``, ``Close``). Defaults to ``Close``.
+        show : bool
+            ``True`` if the generated plot should be shown on the screen, otherwise
+            ``False``. Defaults to ``True``.
+        block : bool
+            Whether to wait for all figures to be closed before returning. When ``False``
+            the figure windows will be displayed and returned immediately. Defaults to
+            ``True``.
+        data_transform : Callable | None
+            A function which transforms the data to be used for the plot. If parameter
+            ``log_scale=True`` then it takes the value ``np.log``. Defaults to ``None``.
+
+        """
+
+        if data_transform is None:
+
+            def data_transform(d):
+                return d
 
         if log_scale:
-            ylabel += " (log scale)"
-            transform = np.log
+            data_transform = np.log
 
         for symbol, data in self._data.items():
             plt.plot(
-                transform(data[series]),
+                data_transform(data[price_type]),
                 label=symbol,
             )
 
         plt.title(title)
         plt.xlabel(xlabel)
-        plt.ylabel(ylabel + " (log scale)" if log_scale else "")
+        plt.ylabel(ylabel)
         plt.xticks(rotation=ticks_rotation)
         plt.legend(loc=legend_loc)
 
@@ -438,38 +536,104 @@ class Dataset(object):
             plt.close()
 
     def get_tickers(self) -> List[str]:
-        """ """
-        return self._symbols
+        """
+        Return the saved list of ticker symbols.
+
+        Returns
+        -------
+        list
+            A list of ``str`` ticker symbols.
+
+        """
+        return self._tickers
 
     def get_data(self) -> Dict[str, pd.DataFrame]:
-        """ """
+        """
+        Return the saved dictionary which maps ticker symbols to their
+        corresponding historical data with the following columns:
+        (``Date``, ``Open``, ``High``, ``Low``, ``Close``).
+
+        Returns
+        -------
+        dict
+            A dictionary with key: ``str`` and value: ``pd.DataFrame``.
+
+        """
         return self._data
 
-    def as_df(
-        self,
-        series: Literal[
-            "Open",
-            "High",
-            "Low",
-            "Close",
-        ] = "Close",
-    ) -> pd.DataFrame:
-        """Create one aggregated dataframe for the specified series."""
+    def as_assets(self, *, price_type: str = "Close") -> List[Asset]:
+        """
+        Create a list of Assets for each ticker and specified price type.
+
+        Parameters
+        ----------
+        price_type : str
+            The price type data to create an ``Asset`` object with. Has to be one
+            of (``Open``, ``High``, ``Low``, ``Close``). Defaults to ``Close``.
+
+        Returns
+        -------
+        list
+            A list of newly created ``Asset`` objects.
+
+        """
+        return [
+            Asset(
+                self._data[ticker],
+                self._names[i],
+                price_type=price_type,
+                market=self._market,
+                index_name=self._index_name,
+            )
+            for i, ticker in enumerate(self._tickers)
+        ]
+
+    def as_df(self, *, price_type: str = "Close") -> pd.DataFrame:
+        """
+        Create an aggregated ``pd.DataFrame`` for the specified price type.
+        It will have the shape (n_samples, n_tickers).
+
+        Parameters
+        ----------
+        price_type : str
+            The price type data to create the ``pd.DataFrame`` object with. Has to
+            be one of (``Open``, ``High``, ``Low``, ``Close``). Defaults to ``Close``.
+
+        Returns
+        -------
+        pd.DataFrame
+            A new ``pd.DataFrame`` with ticker names as columns.
+
+        """
         return pd.DataFrame(
-            {
-                ticker: data[series]
-                for ticker, data in zip(self._symbols, self._data.values())
-            }
+            {t: d[price_type] for t, d in zip(self._tickers, self._data.values())}
         )
 
     def as_numpy(
         self,
-        series: Literal[
-            "Open",
-            "High",
-            "Low",
-            "Close",
-        ] = "Close",
+        *,
+        price_type: str = "Close",
+        dtype: np.typing.DTypeLike = np.float32,
     ) -> np.ndarray:
-        """Extract all stored pd.Series objects and cast them to np.ndarray."""
-        return np.array([d[series] for d in self._data.values()]).astype(np.float32)
+        """
+        Extract the specified price type from stored data as np.ndarray.
+        It will have the shape (n_tickers, n_samples).
+
+        Parameters
+        ----------
+        price_type : str
+            The price type data to create the ``np.ndarray`` with. Has to be one
+            of (``Open``, ``High``, ``Low``, ``Close``). Defaults to ``Close``.
+        dtype : np.typing.DTypeLike
+            The data type to create the new ``np.ndarray`` as.
+            Defaults to ``np.float32``.
+
+        Returns
+        -------
+        np.ndarray
+            A new ``np.ndarray`` from the specified price type and dtype.
+
+        """
+        return np.array(
+            [d[price_type].to_numpy().astype(dtype) for d in self._data.values()]
+        )
