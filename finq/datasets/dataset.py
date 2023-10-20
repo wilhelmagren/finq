@@ -76,7 +76,7 @@ class Dataset(object):
     ) -> Dataset:
         """ """
 
-        log.debug(
+        log.info(
             "creating cached rate-limited session with "
             f"{n_requests} requests per {t_interval} seconds"
         )
@@ -182,6 +182,27 @@ class Dataset(object):
         """ """
         return pd.read_csv(path, sep=separator)
 
+    @staticmethod
+    def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
+        """ """
+        dates = {}
+        all_dates = []
+
+        for ticker, df in data.items():
+            dates[ticker] = df["Date"].tolist()
+            all_dates.extend(dates[ticker])
+
+        unique_dates = (
+            pd.DataFrame({"Date": list(set(all_dates))})
+            .sort_values(
+                by="Date",
+                ascending=True,
+            )["Date"]
+            .tolist()
+        )
+
+        return unique_dates, dates
+
     def _prepare_save_path(self) -> Union[Exception, None]:
         """ """
 
@@ -229,70 +250,6 @@ class Dataset(object):
 
         return True
 
-    def load_local_files(self) -> bool:
-        """ """
-
-        path = Path(self._save_path)
-        if not path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{path}` does not exist. Perhaps you haven't"
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info_path = path / "info"
-        data_path = path / "data"
-
-        if not info_path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{info_path}` does not exist. Perhaps you haven't"
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        if not data_path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{data_path}` does not exist. Perhaps you haven't"
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info = {}
-        data = {}
-
-        for ticker in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Loading ticker {ticker} from local path {path}")
-            info[ticker] = self._load_info(info_path / f"{ticker}.json")
-            data[ticker] = self._load_data(
-                data_path / f"{ticker}.csv",
-                separator=self._separator,
-            )
-
-        all_dates, dates = self._extract_dates_from_data(data)
-
-        self._info = info
-        self._data = data
-        self._dates = dates
-        self._all_dates = all_dates
-
-    @staticmethod
-    def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
-        """ """
-        dates = {}
-        all_dates = []
-
-        for ticker, df in data.items():
-            dates[ticker] = df["Date"].tolist()
-            all_dates.extend(dates[ticker])
-
-        unique_dates = (
-            pd.DataFrame({"Date": list(set(all_dates))})
-            .sort_values(
-                by="Date",
-                ascending=True,
-            )["Date"]
-            .tolist()
-        )
-
-        return unique_dates, dates
-
     def _save_info_and_data(self):
         """ """
 
@@ -329,6 +286,49 @@ class Dataset(object):
                 period=period,
                 proxy=self._proxy,
             ).reset_index()[cols]
+
+        all_dates, dates = self._extract_dates_from_data(data)
+
+        self._info = info
+        self._data = data
+        self._dates = dates
+        self._all_dates = all_dates
+
+    def load_local_files(self) -> bool:
+        """ """
+
+        path = Path(self._save_path)
+        if not path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        info_path = path / "info"
+        data_path = path / "data"
+
+        if not info_path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{info_path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        if not data_path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{data_path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        info = {}
+        data = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Loading ticker {ticker} from local path {path}")
+            info[ticker] = self._load_info(info_path / f"{ticker}.json")
+            data[ticker] = self._load_data(
+                data_path / f"{ticker}.csv",
+                separator=self._separator,
+            )
 
         all_dates, dates = self._extract_dates_from_data(data)
 
