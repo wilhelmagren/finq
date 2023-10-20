@@ -8,6 +8,7 @@ install:
 
 .PHONY: test
 test:
+	clear
 	poetry run pytest tests
 
 .PHONY: build
