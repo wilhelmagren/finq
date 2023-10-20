@@ -35,8 +35,10 @@ import pandas as pd
 import numpy as np
 
 from finq.asset import Asset
-from finq.datautil import CachedRateLimiter
-from finq.datautil import _fetch_names_and_symbols
+from finq.datautil import (
+    CachedRateLimiter,
+    _fetch_names_and_symbols,
+)
 from tqdm import tqdm
 from pyrate_limiter import (
     Duration,
@@ -242,11 +244,15 @@ class Dataset(object):
             for ticker in self._symbols:
                 if not Path(info_path / f"{ticker}.json").exists():
                     return False
+        else:
+            return False
 
         if data_path.is_dir():
             for ticker in self._symbols:
                 if not Path(data_path / f"{ticker}.csv").exists():
                     return False
+        else:
+            return False
 
         return True
 
