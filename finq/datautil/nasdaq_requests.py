@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-18
+Last updated: 2023-10-20
 """
 
 import logging
@@ -72,16 +72,18 @@ def _fetch_names_and_symbols(
 
     if index not in IMPLEMENTED_INDEX:
         log.warning(
-            f"`{index}` is not a natively implemented index, will attempt "
-            f"to fetch from NASDAQ, but be prepared for failures..."
+            f"`{index}` is not a natively implemented index, "
+            "but will attempt to fetch from NASDAQ..."
         )
 
     url = BASE_URL + index
 
-    weekday_diff = max(datetime.today().isoweekday() - 5, 0)
-    last_weekday = datetime.date(datetime.today() - timedelta(weekday_diff)).strftime(
-        "%Y-%m-%d"
-    )
+    today = datetime.today()
+    if today.hour < 12:
+        today = today - timedelta(1)
+
+    weekday_diff = max(today.isoweekday() - 5, 0)
+    last_weekday = datetime.date(today - timedelta(weekday_diff)).strftime("%Y-%m-%d")
 
     params = {
         "tradeDate": f"{last_weekday}T00:00:00.000",
