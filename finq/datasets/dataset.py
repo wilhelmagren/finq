@@ -271,15 +271,81 @@ class Dataset(object):
         self._dates = dates
         self._all_dates = all_dates
 
+    def _local_files_exist(self) -> bool:
+        """ """
+        path = Path(self._save_path)
+        info_path = path / "info"
+        data_path = path / "data"
+
+        if info_path.is_dir():
+            for ticker in self._tickers:
+                if not Path(info_path / f"{ticker}.json").exists():
+                    return False
+
+        if data_path.is_dir():
+            for ticker in self._tickers:
+                if not Path(data_path / f"{ticker}.csv").exists():
+                    return False
+
+        return True
+
+    def load_local_files(self, separator: str = ";") -> bool:
+        """ """
+
+        path = Path(self._save_path)
+        if not path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        info_path = path / "info"
+        data_path = path / "data"
+
+        if not info_path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{info_path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        if not data_path.is_dir():
+            raise FileNotFoundError(
+                f"The local save path `{data_path}` does not exist. Perhaps you haven't"
+                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
+            )
+
+        info = {}
+        data = {}
+
+        for ticker in (bar := tqdm(self._tickers)):
+            bar.set_description(f"Loading ticker {ticker} from local path {path}")
+
+            with open(info_path / f"{ticker}.json", "r") as f:
+                info[ticker] = json.load(f)
+
+            data[ticker] = pd.read_csv(data_path / f"{ticker}.csv", sep=separator)
+
     def fetch_data(
         self,
         period: str,
         *,
-        n_requests: int = 2,
-        interval: int = 1,
-        separator: Literal[",", ".", ";", ":"] = ";",
+        separator: str = ";",
     ) -> Dataset:
         """ """
+
+        if self._local_files_exist():
+            log.info(
+                f"found existing local files for `{self.__class__.__name__}`"
+                "attempting local load..."
+            )
+
+            try:
+                self.load_local_files(separator=separator)
+                log.info("OK!")
+                return
+
+            except FileNotFoundError:
+                log.warning("failed to load local files, will attempt new fetch...")
 
         path = Path(self._save_path)
         info_path = path / "info"

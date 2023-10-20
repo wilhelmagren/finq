@@ -21,34 +21,24 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-18
+File created: 2023-10-20
 Last updated: 2023-10-20
 """
 
 import logging
-import pandas as pd
-from typing import (
-    Optional,
-)
+from finq.datasets import Dataset
 
 log = logging.getLogger(__name__)
 
 
-class Asset(object):
+class Portfolio(object):
     """ """
 
     def __init__(
         self,
-        data: pd.Series,
-        name: str,
-        *,
-        price_type: str = "Close",
-        market: Optional[str] = None,
-        index_name: Optional[str] = None,
+        dataset: Dataset,
     ):
         """ """
 
-        self._data = data
-        self._name = name
-        self._market = market
-        self._index_name = index_name
+        self._dataset = dataset
+        self._ticker_data = dataset.get_data()
