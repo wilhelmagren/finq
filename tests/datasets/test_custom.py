@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-19
+Last updated: 2023-10-21
 """
 
 import os
@@ -193,7 +193,7 @@ class CustomDatasetTest(unittest.TestCase):
 
         self.assertEqual(
             dataset._save_path,
-            ".data/OMXS30/",
+            Path(".data/OMXS30/"),
         )
 
         top_stocks = [

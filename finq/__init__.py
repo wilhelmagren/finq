@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-18
+Last updated: 2023-10-21
 """
 
 from finq import datasets  # noqa
 from finq import datautil  # noqa
+from .asset import Asset  # noqa
+from .portfolio import Portfolio  # noqa
 from .__version__ import __version__  # noqa
 
 import numpy as np
@@ -60,7 +62,7 @@ console_handler.setLevel(os.getenv("LOGLEVEL", logging.INFO))
 
 console_handler.setFormatter(
     ColoredFormatter(
-        "[%(asctime)s] [ %(levelname)s ]\t%(message)s",
+        "[%(asctime)s] [ %(levelname)s ] %(message)s",
     )
 )
 log.addHandler(console_handler)

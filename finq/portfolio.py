@@ -21,35 +21,22 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-18
+File created: 2023-10-20
 Last updated: 2023-10-21
 """
 
 import logging
-import pandas as pd
-from typing import (
-    Optional,
-)
 
 log = logging.getLogger(__name__)
 
 
-class Asset(object):
+class Portfolio(object):
     """ """
 
     def __init__(
         self,
-        data: pd.Series,
-        name: str,
-        *,
-        market: Optional[str] = None,
-        index_name: Optional[str] = None,
-        price_type: str = "Close",
+        *args,
+        **kwargs,
     ):
         """ """
-
-        self._data = data
-        self._name = name
-        self._market = market
-        self._index_name = index_name
-        self._price_type = price_type
+        pass
