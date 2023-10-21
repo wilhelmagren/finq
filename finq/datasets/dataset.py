@@ -38,7 +38,11 @@ from finq.exceptions import DirectoryNotFoundError
 from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
-    _fetch_names_and_symbols,
+    all_tickers_saved,
+    default_finq_cache_path,
+    default_finq_save_path,
+    setup_finq_save_path,
+    fetch_names_and_symbols,
 )
 from tqdm import tqdm
 from pyrate_limiter import (
@@ -109,9 +113,10 @@ class Dataset(object):
         n_requests: int = 5,
         t_interval: int = 1,
         save: bool = False,
-        save_path: Union[Path, str] = Path.home(),
+        save_path: Union[Path, str] = default_finq_save_path(),
         dataset_name: str = "dataset",
         separator: str = ";",
+        filter_symbols: Callable = lambda s: s,
     ) -> Dataset:
         """ """
 
@@ -124,6 +129,7 @@ class Dataset(object):
         # Yahoo! Finance's rate-limiter that can otherwise corrupt data.
         # We specify a maximum number of requests N per X seconds.
         session = CachedRateLimiter(
+            cache_name=default_finq_cache_path(),
             limiter=Limiter(
                 RequestRate(
                     n_requests,
@@ -145,10 +151,16 @@ class Dataset(object):
         self._t_interval = t_interval
 
         if (not names or not symbols) and isinstance(index_name, str):
-            names, symbols = _fetch_names_and_symbols(
+            if market == "OMX":
+
+                def filter_symbols(s):
+                    return s.replace(" ", "-") + ".ST"
+
+            names, symbols = fetch_names_and_symbols(
                 index_name,
                 market=market,
                 session=session,
+                filter_symbols=filter_symbols,
             )
 
         if not names or not symbols:
@@ -170,7 +182,7 @@ class Dataset(object):
         self._index_name = index_name
 
         self._save = save
-        self._save_path = Path(save_path) / ".data" / dataset_name
+        self._save_path = Path(save_path) / dataset_name
         self._dataset_name = dataset_name
         self._separator = separator
 
@@ -297,73 +309,6 @@ class Dataset(object):
         )
 
         return unique_dates, dates
-
-    def _prepare_save_path(self) -> Optional[NotADirectoryError]:
-        """
-        Create the local paths required to save any fetched ticker data.
-
-        Raises
-        ------
-        NotADirectoryError
-            If the local save path exists but is not a directory.
-
-        """
-
-        path = Path(self._save_path)
-
-        log.info(f"preparing {path} path...")
-        if path.exists():
-            if not path.is_dir():
-                raise NotADirectoryError(
-                    "Your specified path to save fetched data to is not a directory, "
-                    "maybe you provided a path to a file you want to create?"
-                )
-
-            log.warning(f"path {path} already exists, will overwrite existing data...")
-
-        log.info(f"creating {path}...")
-        path.mkdir(parents=True, exist_ok=True)
-        log.info("OK!")
-
-        info_path = path / "info"
-        data_path = path / "data"
-        log.info(f"creating path {info_path}...")
-        info_path.mkdir(parents=False, exist_ok=True)
-        log.info("OK!")
-
-        log.info(f"creating path {data_path}...")
-        data_path.mkdir(parents=False, exist_ok=True)
-        log.info("OK!")
-
-    def _all_local_files_saved(self) -> bool:
-        """
-        Check whether or not all tickers to fetch already exists locally.
-
-        Returns
-        -------
-        bool
-            ``True`` if all ticker files exist locally, else ``False``.
-
-        """
-        path = Path(self._save_path)
-        info_path = path / "info"
-        data_path = path / "data"
-
-        if info_path.is_dir():
-            for ticker in self._symbols:
-                if not Path(info_path / f"{ticker}.json").exists():
-                    return False
-        else:
-            return False
-
-        if data_path.is_dir():
-            for ticker in self._symbols:
-                if not Path(data_path / f"{ticker}.csv").exists():
-                    return False
-        else:
-            return False
-
-        return True
 
     def _save_info_and_data(self):
         """
@@ -506,7 +451,7 @@ class Dataset(object):
 
         """
 
-        if self._all_local_files_saved():
+        if all_tickers_saved(self._save_path, self._symbols):
             log.info(
                 f"found existing local files for {self.__class__.__name__}, "
                 "attempting local load..."
@@ -523,7 +468,7 @@ class Dataset(object):
         self._fetch_tickers(period, cols)
 
         if self._save:
-            self._prepare_save_path()
+            setup_finq_save_path(self._save_path)
             self._save_info_and_data()
 
         return self
