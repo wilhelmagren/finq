@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-21
+Last updated: 2023-10-22
 """
 
 from __future__ import annotations
@@ -34,7 +34,10 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
-from finq.exceptions import DirectoryNotFoundError
+from finq.exceptions import (
+    DirectoryNotFoundError,
+    InvalidCombinationOfArgumentsError,
+)
 from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
@@ -84,6 +87,9 @@ class Dataset(object):
         The name of the financial index to get ticker symbols and names from.
     proxy : str | None
         The name of the proxy url to use for REST requests.
+    cache_name: Path | str
+        The name of the path to the file which stores the cache.
+        Defaults to ``/home/.finq/http_cache``.
     n_requests : int
         The max number of requests to perform per ``t_interval``. Defaults to ``5``.
     t_interval : int
@@ -110,6 +116,7 @@ class Dataset(object):
         market: str = "OMX",
         index_name: Optional[str] = None,
         proxy: Optional[str] = None,
+        cache_name: Union[Path, str] = default_finq_cache_path(),
         n_requests: int = 5,
         t_interval: int = 1,
         save: bool = False,
@@ -117,7 +124,7 @@ class Dataset(object):
         dataset_name: str = "dataset",
         separator: str = ";",
         filter_symbols: Callable = lambda s: s,
-    ) -> Dataset:
+    ) -> Optional[InvalidCombinationOfArgumentsError]:
         """ """
 
         log.info(
@@ -129,7 +136,7 @@ class Dataset(object):
         # Yahoo! Finance's rate-limiter that can otherwise corrupt data.
         # We specify a maximum number of requests N per X seconds.
         session = CachedRateLimiter(
-            cache_name=default_finq_cache_path(),
+            cache_name=cache_name,
             limiter=Limiter(
                 RequestRate(
                     n_requests,
@@ -164,14 +171,14 @@ class Dataset(object):
             )
 
         if not names or not symbols:
-            raise ValueError(
+            raise InvalidCombinationOfArgumentsError(
                 "You did not pass in a list of names and symbols, and if you "
                 "passed in an index name to fetch, the request failed since "
                 f"`{names=}` and `{symbols=}`. Did you pass in a valid index name?"
             )
 
         if not (len(names) == len(symbols)):
-            raise ValueError(
+            raise InvalidCombinationOfArgumentsError(
                 "Number of names does not match the number of ticker symbols, "
                 f"{len(names)} != {len(symbols)}.\n{names=}\n{symbols=}"
             )
