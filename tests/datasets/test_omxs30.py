@@ -31,9 +31,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 
+from finq.datautil import default_finq_save_path
 from finq.datasets import OMXS30
-
-SAVE_PATH = Path.home()
 
 
 class OMXS30Test(unittest.TestCase):
@@ -47,13 +46,13 @@ class OMXS30Test(unittest.TestCase):
     def setUp(self):
         """ """
 
-        self._save_path = SAVE_PATH
+        self._save_path = default_finq_save_path()
         self._dataset_name = "OMXS30"
 
     def tearDown(self):
         """ """
 
-        path = self._save_path / ".data" / self._dataset_name
+        path = self._save_path / self._dataset_name
 
         if path.is_dir():
             shutil.rmtree(path)
@@ -83,8 +82,11 @@ class OMXS30Test(unittest.TestCase):
         dataset = OMXS30(save_path=".", save=True)
         dataset.run("6m")
 
+        custom_path = Path(".") / "OMXS30"
         self.assertTrue(dataset._save_path.is_dir())
         self.assertEqual(
             dataset._save_path,
-            Path(".") / ".data" / "OMXS30",
+            custom_path,
         )
+
+        shutil.rmtree(custom_path)

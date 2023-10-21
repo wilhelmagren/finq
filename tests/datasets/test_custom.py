@@ -34,9 +34,8 @@ from pathlib import Path
 
 from .mock_df import _random_df
 from finq.datasets import CustomDataset
+from finq.datautil import default_finq_save_path
 from finq import InvalidCombinationOfArgumentsError
-
-SAVE_PATH = Path.home()
 
 
 class CustomDatasetTest(unittest.TestCase):
@@ -66,13 +65,13 @@ class CustomDatasetTest(unittest.TestCase):
         self._names = names
         self._symbols = symbols
         self._market = "OMX"
-        self._save_path = SAVE_PATH
+        self._save_path = default_finq_save_path()
         self._dataset_name = "CUSTOM_COOL"
 
     def tearDown(self):
         """ """
 
-        path = self._save_path / ".data" / self._dataset_name
+        path = self._save_path / self._dataset_name
 
         if path.is_dir():
             shutil.rmtree(path)
@@ -168,13 +167,13 @@ class CustomDatasetTest(unittest.TestCase):
         self.assertTrue(data_path.is_dir())
 
         self.assertTrue(
-            (self._save_path / ".data" / self._dataset_name / "info").is_dir(),
+            (self._save_path / self._dataset_name / "info").is_dir(),
         )
         self.assertTrue(
-            (self._save_path / ".data" / self._dataset_name / "data").is_dir(),
+            (self._save_path / self._dataset_name / "data").is_dir(),
         )
 
-    @patch("finq.datautil._fetch_names_and_symbols")
+    @patch("finq.datautil.fetch_names_and_symbols")
     @patch("yfinance.Ticker.info", new_callable=PropertyMock)
     @patch("yfinance.Ticker.history")
     def test_fetch_index_data(self, mock_ticker_data, mock_ticker_info, mock_get):
@@ -205,7 +204,7 @@ class CustomDatasetTest(unittest.TestCase):
 
         self.assertEqual(
             dataset._save_path,
-            self._save_path / ".data" / "OMXS30",
+            self._save_path / "OMXS30",
         )
 
         top_stocks = [
@@ -241,14 +240,14 @@ class CustomDatasetTest(unittest.TestCase):
 
         dataset.run("1y")
 
-        info_path = self._save_path / ".data" / self._dataset_name / "info"
-        data_path = self._save_path / ".data" / self._dataset_name / "data"
+        info_path = self._save_path / self._dataset_name / "info"
+        data_path = self._save_path / self._dataset_name / "data"
 
         self.assertTrue(info_path.is_dir())
         self.assertTrue(data_path.is_dir())
         self.assertEqual(
             dataset._save_path,
-            self._save_path / ".data" / self._dataset_name,
+            self._save_path / self._dataset_name,
         )
 
         d = CustomDataset(

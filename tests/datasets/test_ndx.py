@@ -28,13 +28,11 @@ Last updated: 2023-10-21
 import shutil
 import unittest
 from unittest.mock import patch, PropertyMock
-from pathlib import Path
 
 from .mock_df import _random_df
 from finq.datasets import NDX
+from finq.datautil import default_finq_save_path
 from finq import Asset
-
-SAVE_PATH = Path.home()
 
 
 class NDXTest(unittest.TestCase):
@@ -43,13 +41,13 @@ class NDXTest(unittest.TestCase):
     def setUp(self):
         """ """
 
-        self._save_path = SAVE_PATH
+        self._save_path = default_finq_save_path()
         self._dataset_name = "NDX"
 
     def tearDown(self):
         """ """
 
-        path = self._save_path / ".data" / self._dataset_name
+        path = self._save_path / self._dataset_name
 
         if path.is_dir():
             shutil.rmtree(path)
@@ -69,8 +67,8 @@ class NDXTest(unittest.TestCase):
         d = NDX(save=True)
         d.run("1y")
 
-        info_path = self._save_path / ".data" / self._dataset_name / "info"
-        data_path = self._save_path / ".data" / self._dataset_name / "data"
+        info_path = self._save_path / self._dataset_name / "info"
+        data_path = self._save_path / self._dataset_name / "data"
 
         self.assertTrue(info_path.is_dir())
         self.assertTrue(data_path.is_dir())
