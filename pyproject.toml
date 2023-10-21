@@ -82,6 +82,7 @@ ignore = [
     "E401",  # unused imports, we do this in submodule __init__.py files
     "E501",  # line too long error, handled by black
     "E722",  # bare `except`
+    "E731",  # do not assign a `lambda` expression, use a `def`
 ]
 
 [tool.black]
