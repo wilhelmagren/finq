@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-19
+Last updated: 2023-10-21
 """
 
 import shutil
@@ -33,30 +33,35 @@ from pathlib import Path
 
 from finq.datasets import OMXS30
 
-SAVE_PATH = ".data/OMXS30/"
+SAVE_PATH = Path.home()
 
 
 class OMXS30Test(unittest.TestCase):
-    """NOTE: This is the only index that we will not mock. This is relatively small enough
+    """
+    NOTE: This is the only index that we will not mock. This is relatively small enough
     so we are not generating a lot of traffic when testing without mock. For all other
     tests, we should mock.
+
     """
 
     def setUp(self):
         """ """
+
         self._save_path = SAVE_PATH
+        self._dataset_name = "OMXS30"
 
     def tearDown(self):
         """ """
-        path = Path(SAVE_PATH)
+
+        path = self._save_path / ".data" / self._dataset_name
 
         if path.is_dir():
-            shutil.rmtree(SAVE_PATH)
+            shutil.rmtree(path)
 
     def test_fetch_data_no_save(self):
         """ """
 
-        dataset = OMXS30(save_path=self._save_path, save=False)
+        dataset = OMXS30(save=False)
 
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
         df = dataset["SHB-A.ST"]
@@ -66,7 +71,20 @@ class OMXS30Test(unittest.TestCase):
 
     def test_fetch_data_save(self):
         """ """
+
         dataset = OMXS30(save_path=self._save_path, save=True)
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
 
-        self.assertTrue(Path(dataset._save_path).is_dir())
+        self.assertTrue(dataset._save_path.is_dir())
+
+    def test_fetch_data_save_different_path(self):
+        """ """
+
+        dataset = OMXS30(save_path=".", save=True)
+        dataset.run("6m")
+
+        self.assertTrue(dataset._save_path.is_dir())
+        self.assertEqual(
+            dataset._save_path,
+            Path(".") / ".data" / "OMXS30",
+        )
