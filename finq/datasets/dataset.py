@@ -62,32 +62,39 @@ log = logging.getLogger(__name__)
 
 class Dataset(object):
     """
-    A collection of ticker symbols and their historical price data.
+    A collection of ticker symbols and their historical price data. Fetches information
+    and prices from Yahoo! Finance and optionally saves them to a local path for later
+    use. Supports fixing missing values by interpolating ``NaN`` and verifying the
+    integrity of the fetched data.
 
     Parameters
     ----------
     names : list | None
-
+        The names of the financial assets to create a dataset with.
     symbols : list | None
-
+        The ticker symbols corresponding to the names of the financial assets.
     market : str
-
+        The name of the market to fetch the historical price data from.
+        Defaults to ``OMX``.
     index_name : str | None
-
+        The name of the financial index to get ticker symbols and names from.
     proxy : str | None
-
+        The name of the proxy url to use for REST requests.
     n_requests : int
-
+        The max number of requests to perform per ``t_interval``. Defaults to ``5``.
     t_interval : int
-
+        The time interval (in seconds) to use with the ``CachedRateLimiter``.
+        Defaults to ``1``.
     save : bool
-
+        Wether or not to save the fetched data to a local file path.
     save_path : Path | str
-
+        The local file path to potentially save any fetched data to.
+        Defaults to ``.data/dataset/``.
+    dataset_name : str
+        The name of the ``Dataset`` class instance.
     separator : str
-
-    Attributes
-    ----------
+        The csv separator to use when loading and saving any ``pd.DataFrame``.
+        Defaults to ``;``.
 
     """
 
@@ -102,7 +109,8 @@ class Dataset(object):
         n_requests: int = 5,
         t_interval: int = 1,
         save: bool = False,
-        save_path: Union[Path, str] = ".data/dataset/",
+        save_path: Union[Path, str] = Path.home(),
+        dataset_name: str = "dataset",
         separator: str = ";",
     ) -> Dataset:
         """ """
@@ -162,7 +170,8 @@ class Dataset(object):
         self._index_name = index_name
 
         self._save = save
-        self._save_path = Path(save_path)
+        self._save_path = Path(save_path) / ".data" / dataset_name
+        self._dataset_name = dataset_name
         self._separator = separator
 
     def __getitem__(self, key: str) -> Optional[pd.DataFrame]:

@@ -26,6 +26,12 @@ Last updated: 2023-10-21
 """
 
 
+class InvalidCombinationOfArgumentsError(Exception):
+    """ """
+
+    pass
+
+
 class DirectoryNotFoundError(Exception):
     """ """
 

@@ -22,15 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-12
+Last updated: 2023-10-21
 """
 
 from finq.datasets.dataset import Dataset
 
-from pathlib import Path
 from typing import (
+    Any,
     Dict,
-    Union,
 )
 
 snp500_names = [
@@ -1049,18 +1048,13 @@ snp500_symbols = [
 class SNP500(Dataset):
     """ """
 
-    def __init__(
-        self,
-        *,
-        save_path: Union[str, Path] = ".data/SNP500/",
-        **kwargs: Dict,
-    ):
+    def __init__(self, **kwargs: Dict[str, Any]):
         """ """
 
         super(SNP500, self).__init__(
             snp500_names,
             snp500_symbols,
             market="NASDAQ",
-            save_path=save_path,
+            dataset_name="SNP500",
             **kwargs,
         )
