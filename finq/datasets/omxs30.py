@@ -22,32 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-16
+Last updated: 2023-10-21
 """
 
 from finq.datasets.dataset import Dataset
 
-from pathlib import Path
 from typing import (
+    Any,
     Dict,
-    Union,
 )
 
 
 class OMXS30(Dataset):
     """ """
 
-    def __init__(
-        self,
-        *,
-        save_path: Union[str, Path] = ".data/OMXS30/",
-        **kwargs: Dict,
-    ):
+    def __init__(self, **kwargs: Dict[str, Any]):
         """ """
 
         super(OMXS30, self).__init__(
-            index_name="OMXS30",
             market="OMX",
-            save_path=save_path,
+            index_name="OMXS30",
+            dataset_name="OMXS30",
             **kwargs,
         )

@@ -22,33 +22,26 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-16
+Last updated: 2023-10-21
 """
 
 from finq.datasets.dataset import Dataset
 
-from pathlib import Path
 from typing import (
     Any,
     Dict,
-    Union,
 )
 
 
 class NDX(Dataset):
     """ """
 
-    def __init__(
-        self,
-        *,
-        save_path: Union[str, Path] = ".data/NDX/",
-        **kwargs: Dict[str, Any],
-    ):
+    def __init__(self, **kwargs: Dict[str, Any]):
         """ """
 
         super(NDX, self).__init__(
-            index_name="NDX",
             market="NASDAQ",
-            save_path=save_path,
+            index_name="NDX",
+            dataset_name="NDX",
             **kwargs,
         )

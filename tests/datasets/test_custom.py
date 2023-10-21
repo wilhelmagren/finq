@@ -33,9 +33,9 @@ from unittest.mock import patch, PropertyMock
 from pathlib import Path
 
 from .mock_df import _random_df
-from finq.datasets.custom import CustomDataset
-
-SAVE_PATH = ".data/CUSTOM_COOL/"
+from finq.datasets import CustomDataset
+from finq.datautil import default_finq_save_path
+from finq import InvalidCombinationOfArgumentsError
 
 
 class CustomDatasetTest(unittest.TestCase):
@@ -43,6 +43,7 @@ class CustomDatasetTest(unittest.TestCase):
 
     def setUp(self):
         """ """
+
         names = [
             "Alfa Laval",
             "Boliden",
@@ -64,14 +65,16 @@ class CustomDatasetTest(unittest.TestCase):
         self._names = names
         self._symbols = symbols
         self._market = "OMX"
-        self._save_path = SAVE_PATH
+        self._save_path = default_finq_save_path()
+        self._dataset_name = "CUSTOM_COOL"
 
     def tearDown(self):
         """ """
-        path = Path(SAVE_PATH)
+
+        path = self._save_path / self._dataset_name
 
         if path.is_dir():
-            shutil.rmtree(SAVE_PATH)
+            shutil.rmtree(path)
 
     @patch("yfinance.Ticker.info", new_callable=PropertyMock)
     @patch("yfinance.Ticker.history")
@@ -89,7 +92,6 @@ class CustomDatasetTest(unittest.TestCase):
             self._names,
             self._symbols,
             market=self._market,
-            save_path=self._save_path,
             save=False,
         )
 
@@ -118,7 +120,6 @@ class CustomDatasetTest(unittest.TestCase):
             self._names,
             self._symbols,
             market=self._market,
-            save_path=self._save_path,
             save=False,
         )
 
@@ -148,6 +149,7 @@ class CustomDatasetTest(unittest.TestCase):
             self._symbols,
             market=self._market,
             save_path=self._save_path,
+            dataset_name=self._dataset_name,
             save=True,
         )
 
@@ -158,11 +160,20 @@ class CustomDatasetTest(unittest.TestCase):
             self._symbols,
         )
 
+        info_path = dataset._save_path / "info"
+        data_path = dataset._save_path / "data"
+
+        self.assertTrue(info_path.is_dir())
+        self.assertTrue(data_path.is_dir())
+
         self.assertTrue(
-            Path(dataset._save_path).is_dir(),
+            (self._save_path / self._dataset_name / "info").is_dir(),
+        )
+        self.assertTrue(
+            (self._save_path / self._dataset_name / "data").is_dir(),
         )
 
-    @patch("finq.datautil._fetch_names_and_symbols")
+    @patch("finq.datautil.fetch_names_and_symbols")
     @patch("yfinance.Ticker.info", new_callable=PropertyMock)
     @patch("yfinance.Ticker.history")
     def test_fetch_index_data(self, mock_ticker_data, mock_ticker_info, mock_get):
@@ -193,7 +204,7 @@ class CustomDatasetTest(unittest.TestCase):
 
         self.assertEqual(
             dataset._save_path,
-            Path(".data/OMXS30/"),
+            self._save_path / "OMXS30",
         )
 
         top_stocks = [
@@ -223,22 +234,26 @@ class CustomDatasetTest(unittest.TestCase):
             self._symbols,
             market=self._market,
             save_path=self._save_path,
+            dataset_name=self._dataset_name,
             save=True,
         )
 
         dataset.run("1y")
 
-        info_path = Path(self._save_path) / "info"
-        data_path = Path(self._save_path) / "data"
+        info_path = self._save_path / self._dataset_name / "info"
+        data_path = self._save_path / self._dataset_name / "data"
 
         self.assertTrue(info_path.is_dir())
         self.assertTrue(data_path.is_dir())
+        self.assertEqual(
+            dataset._save_path,
+            self._save_path / self._dataset_name,
+        )
 
         d = CustomDataset(
             self._names,
             self._symbols,
             market=self._market,
-            save_path=self._save_path,
             save=False,
         )
 
@@ -251,4 +266,4 @@ class CustomDatasetTest(unittest.TestCase):
 
     def test_all_args_is_none(self):
         """ """
-        self.assertRaises(ValueError, CustomDataset)
+        self.assertRaises(InvalidCombinationOfArgumentsError, CustomDataset)

@@ -22,18 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-19
+Last updated: 2023-10-21
 """
 
 import shutil
 import unittest
 from unittest.mock import patch, PropertyMock
-from pathlib import Path
 
 from .mock_df import _random_df
+from finq.datautil import default_finq_save_path
 from finq.datasets import OMXSBESGNI
-
-SAVE_PATH = ".data/OMXSBESGNI/"
 
 
 class OMXSBESGNITest(unittest.TestCase):
@@ -41,14 +39,17 @@ class OMXSBESGNITest(unittest.TestCase):
 
     def setUp(self):
         """ """
-        self._save_path = SAVE_PATH
+
+        self._save_path = default_finq_save_path()
+        self._dataset_name = "OMXSBESGNI"
 
     def tearDown(self):
         """ """
-        path = Path(SAVE_PATH)
+
+        path = self._save_path / self._dataset_name
 
         if path.is_dir():
-            shutil.rmtree(SAVE_PATH)
+            shutil.rmtree(path)
 
     @patch("yfinance.Ticker.info", new_callable=PropertyMock)
     @patch("yfinance.Ticker.history")
@@ -62,16 +63,16 @@ class OMXSBESGNITest(unittest.TestCase):
         df = _random_df(["Open", "High", "Low", "Close"])
         mock_ticker_data.return_value = df
 
-        d = OMXSBESGNI(save=True)
+        d = OMXSBESGNI(save=True, save_path=self._save_path)
         d.run("1y")
 
-        info_path = Path(self._save_path) / "info"
-        data_path = Path(self._save_path) / "data"
+        info_path = self._save_path / self._dataset_name / "info"
+        data_path = self._save_path / self._dataset_name / "data"
 
         self.assertTrue(info_path.is_dir())
         self.assertTrue(data_path.is_dir())
 
-        n = OMXSBESGNI(save=False)
+        n = OMXSBESGNI(save=False, save_path=self._save_path)
         n.fetch_data("1y")
 
         self.assertEqual(

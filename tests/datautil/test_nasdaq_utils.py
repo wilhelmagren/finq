@@ -22,14 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-13
-Last updated: 2023-10-16
+Last updated: 2023-10-21
 """
 
 import unittest
 import os
 from zipfile import BadZipFile
 
-from finq.datautil import _fetch_names_and_symbols
+from finq.datautil import fetch_names_and_symbols
 
 WRONG_INDEX_NAME = "KEBABXD"
 
@@ -39,10 +39,11 @@ class NasdaqRequestsTest(unittest.TestCase):
 
     def tearDown(self):
         """ """
+
         for file in os.listdir("."):
             if WRONG_INDEX_NAME in file:
                 os.remove(file)
 
     def test_not_supported_index(self):
         """ """
-        self.assertRaises(BadZipFile, _fetch_names_and_symbols, WRONG_INDEX_NAME)
+        self.assertRaises(BadZipFile, fetch_names_and_symbols, WRONG_INDEX_NAME)

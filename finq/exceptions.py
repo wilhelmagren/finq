@@ -22,8 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-18
+Last updated: 2023-10-21
 """
+
+
+class InvalidCombinationOfArgumentsError(Exception):
+    """ """
+
+    pass
+
+
+class DirectoryNotFoundError(Exception):
+    """ """
+
+    pass
 
 
 class NoFeasibleSolutionError(Exception):

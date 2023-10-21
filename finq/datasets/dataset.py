@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-21
+Last updated: 2023-10-22
 """
 
 from __future__ import annotations
@@ -34,10 +34,18 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 
+from finq.exceptions import (
+    DirectoryNotFoundError,
+    InvalidCombinationOfArgumentsError,
+)
 from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
-    _fetch_names_and_symbols,
+    all_tickers_saved,
+    default_finq_cache_path,
+    default_finq_save_path,
+    setup_finq_save_path,
+    fetch_names_and_symbols,
 )
 from tqdm import tqdm
 from pyrate_limiter import (
@@ -60,7 +68,45 @@ log = logging.getLogger(__name__)
 
 
 class Dataset(object):
-    """ """
+    """
+    A collection of ticker symbols and their historical price data. Fetches information
+    and prices from Yahoo! Finance and optionally saves them to a local path for later
+    use. Supports fixing missing values by interpolating ``NaN`` and verifying the
+    integrity of the fetched data.
+
+    Parameters
+    ----------
+    names : list | None
+        The names of the financial assets to create a dataset with.
+    symbols : list | None
+        The ticker symbols corresponding to the names of the financial assets.
+    market : str
+        The name of the market to fetch the historical price data from.
+        Defaults to ``OMX``.
+    index_name : str | None
+        The name of the financial index to get ticker symbols and names from.
+    proxy : str | None
+        The name of the proxy url to use for REST requests.
+    cache_name: Path | str
+        The name of the path to the file which stores the cache.
+        Defaults to ``/home/.finq/http_cache``.
+    n_requests : int
+        The max number of requests to perform per ``t_interval``. Defaults to ``5``.
+    t_interval : int
+        The time interval (in seconds) to use with the ``CachedRateLimiter``.
+        Defaults to ``1``.
+    save : bool
+        Wether or not to save the fetched data to a local file path.
+    save_path : Path | str
+        The local file path to potentially save any fetched data to.
+        Defaults to ``.data/dataset/``.
+    dataset_name : str
+        The name of the ``Dataset`` class instance.
+    separator : str
+        The csv separator to use when loading and saving any ``pd.DataFrame``.
+        Defaults to ``;``.
+
+    """
 
     def __init__(
         self,
@@ -70,12 +116,15 @@ class Dataset(object):
         market: str = "OMX",
         index_name: Optional[str] = None,
         proxy: Optional[str] = None,
+        cache_name: Union[Path, str] = default_finq_cache_path(),
         n_requests: int = 5,
         t_interval: int = 1,
         save: bool = False,
-        save_path: Union[str, Path] = ".data/dataset/",
+        save_path: Union[Path, str] = default_finq_save_path(),
+        dataset_name: str = "dataset",
         separator: str = ";",
-    ) -> Dataset:
+        filter_symbols: Callable = lambda s: s,
+    ) -> Optional[InvalidCombinationOfArgumentsError]:
         """ """
 
         log.info(
@@ -87,6 +136,7 @@ class Dataset(object):
         # Yahoo! Finance's rate-limiter that can otherwise corrupt data.
         # We specify a maximum number of requests N per X seconds.
         session = CachedRateLimiter(
+            cache_name=cache_name,
             limiter=Limiter(
                 RequestRate(
                     n_requests,
@@ -108,21 +158,27 @@ class Dataset(object):
         self._t_interval = t_interval
 
         if (not names or not symbols) and isinstance(index_name, str):
-            names, symbols = _fetch_names_and_symbols(
+            if market == "OMX":
+
+                def filter_symbols(s):
+                    return s.replace(" ", "-") + ".ST"
+
+            names, symbols = fetch_names_and_symbols(
                 index_name,
                 market=market,
                 session=session,
+                filter_symbols=filter_symbols,
             )
 
         if not names or not symbols:
-            raise ValueError(
+            raise InvalidCombinationOfArgumentsError(
                 "You did not pass in a list of names and symbols, and if you "
                 "passed in an index name to fetch, the request failed since "
                 f"`{names=}` and `{symbols=}`. Did you pass in a valid index name?"
             )
 
         if not (len(names) == len(symbols)):
-            raise ValueError(
+            raise InvalidCombinationOfArgumentsError(
                 "Number of names does not match the number of ticker symbols, "
                 f"{len(names)} != {len(symbols)}.\n{names=}\n{symbols=}"
             )
@@ -133,11 +189,26 @@ class Dataset(object):
         self._index_name = index_name
 
         self._save = save
-        self._save_path = Path(save_path)
+        self._save_path = Path(save_path) / dataset_name
+        self._dataset_name = dataset_name
         self._separator = separator
 
     def __getitem__(self, key: str) -> Optional[pd.DataFrame]:
-        """ """
+        """
+        Get the ``pd.DataFrame`` from the locally stored dictionary which maps ticker
+        symbols to their corresponding historical price data.
+
+        Parameters
+        ----------
+        key : str
+            The dictionary key to get data for.
+
+        Returns
+        -------
+        pd.DataFrame
+            The data that is associated with the provided ticker key.
+
+        """
         return self._data.get(key, None)
 
     @staticmethod
@@ -175,18 +246,59 @@ class Dataset(object):
 
     @staticmethod
     def _load_info(path: Union[Path, str]) -> dict:
-        """ """
+        """
+        Parameters
+        ----------
+        path : Path | str
+            The local file path to read the json object from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the information for the ticker.
+
+        """
         with open(path, "r") as f:
             return json.load(f)
 
     @staticmethod
     def _load_data(path: Union[Path, str], separator: str) -> pd.DataFrame:
-        """ """
+        """
+        Create a new ``pd.DataFrame`` from data that is stored locally as a ``csv``.
+
+        Parameters
+        ----------
+        path : Path | str
+            The local file path to read the csv from.
+        separator : str
+            The separator to use for parsing the csv.
+
+        Returns
+        -------
+        pd.DataFrame
+            The data that was stored in the csv.
+
+        """
         return pd.read_csv(path, sep=separator)
 
     @staticmethod
     def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
-        """ """
+        """
+        Extract the ``Date`` column from a ``pd.DataFrame`` and produce a sorted list of
+        unique dates for the ticker.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            The data to extract ``Date`` column from.
+
+        Returns
+        -------
+        tuple
+            A list of the unique dates (sorted in ascending order) and a dictionary
+            containing all ticker dates as key: ``str`` and value: ``list``.
+
+        """
         dates = {}
         all_dates = []
 
@@ -205,59 +317,11 @@ class Dataset(object):
 
         return unique_dates, dates
 
-    def _prepare_save_path(self) -> Union[Exception, None]:
-        """ """
-
-        path = Path(self._save_path)
-
-        log.debug(f"preparing {path} path...")
-        if path.exists():
-            if not path.is_dir():
-                raise ValueError(
-                    "Your specified path to save fetched data to is not a directory, "
-                    "maybe you provided a path to a file you want to create?"
-                )
-
-            log.warning(f"path {path} already exists, will overwrite existing data...")
-
-        log.debug(f"creating {path}...")
-        path.mkdir(parents=True, exist_ok=True)
-        log.debug("OK!")
-
-        info_path = path / "info"
-        data_path = path / "data"
-        log.debug(f"creating path {info_path}...")
-        info_path.mkdir(parents=False, exist_ok=True)
-        log.debug("OK!")
-
-        log.debug(f"creating path {data_path}...")
-        data_path.mkdir(parents=False, exist_ok=True)
-        log.debug("OK!")
-
-    def _all_local_files_saved(self) -> bool:
-        """ """
-        path = Path(self._save_path)
-        info_path = path / "info"
-        data_path = path / "data"
-
-        if info_path.is_dir():
-            for ticker in self._symbols:
-                if not Path(info_path / f"{ticker}.json").exists():
-                    return False
-        else:
-            return False
-
-        if data_path.is_dir():
-            for ticker in self._symbols:
-                if not Path(data_path / f"{ticker}.csv").exists():
-                    return False
-        else:
-            return False
-
-        return True
-
     def _save_info_and_data(self):
-        """ """
+        """
+        Saves the info and data objects to a local file path.
+
+        """
 
         log.info(f"saving fetched tickers to {self._save_path}...")
         for ticker in self._symbols:
@@ -277,7 +341,20 @@ class Dataset(object):
         period: str,
         cols: List[str],
     ):
-        """ """
+        """
+        Use the `yfinance` library to fetch historical ticker data for the specified time
+        period. The performance of the REST requests is highly dependent on three things:
+        the config of your `CachedRateLimiter`, the amount of tickers you want to fetch,
+        and the multi-threading support of your CPU.
+
+        Parameters
+        ----------
+        period : str
+            The time period to try and fetch data from.
+        cols : list
+            The columns of the fetched ticker data to collect.
+
+        """
 
         info = {}
         data = {}
@@ -300,13 +377,22 @@ class Dataset(object):
         self._dates = dates
         self._all_dates = all_dates
 
-    def load_local_files(self) -> bool:
-        """ """
+    def load_local_files(self) -> Optional[DirectoryNotFoundError]:
+        """
+        Load the locally saved info and data files. The info is read from file as a
+        ``json`` and the data is read from ``csv`` as a ``pd.DataFrame``.
+
+        Raises
+        ------
+        DirectoryNotFoundError
+            When either of the paths to the saved ``info`` and ``data`` is not a directory.
+
+        """
 
         path = Path(self._save_path)
         if not path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{path}` does not exist. Perhaps you haven't"
+            raise DirectoryNotFoundError(
+                f"The local save path {path} does not exist. Perhaps you haven't "
                 "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
             )
 
@@ -314,14 +400,14 @@ class Dataset(object):
         data_path = path / "data"
 
         if not info_path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{info_path}` does not exist. Perhaps you haven't"
+            raise DirectoryNotFoundError(
+                f"The local save path {info_path} does not exist. Perhaps you haven't "
                 "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
             )
 
         if not data_path.is_dir():
-            raise FileNotFoundError(
-                f"The local save path `{data_path}` does not exist. Perhaps you haven't"
+            raise DirectoryNotFoundError(
+                f"The local save path {data_path} does not exist. Perhaps you haven't "
                 "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
             )
 
@@ -349,9 +435,30 @@ class Dataset(object):
         *,
         cols: List[str] = ["Date", "Open", "High", "Low", "Close"],
     ) -> Dataset:
-        """ """
+        """
+        Fetch the historical ticker data for the specified time period. If there exists
+        locally saved files for all tickers, will try and load them instead of fetching
+        from Yahoo! Finance. Saves the fetched files if ``save=True`` was specified in
+        the class constructor.
 
-        if self._all_local_files_saved():
+        Parameters
+        ----------
+        period : str
+            The time period to try and fetch data from. Valid values are (``1d``,
+            ``5d``, ``1mo``, ``3mo``, ``6mo``, ``1y``, ``2y``, ``5y``, ``10y``,
+            ``ytd``, ``max``).
+        cols : list
+            The columns of the fetched ticker data to collect. Defaults to
+            (``Date``, ``Open``, ``High``, ``Low``, ``Close``).
+
+        Returns
+        -------
+        Dataset
+            The initialized instance of ``self``.
+
+        """
+
+        if all_tickers_saved(self._save_path, self._symbols):
             log.info(
                 f"found existing local files for {self.__class__.__name__}, "
                 "attempting local load..."
@@ -362,13 +469,13 @@ class Dataset(object):
                 log.info("OK!")
                 return self
 
-            except FileNotFoundError:
+            except DirectoryNotFoundError:
                 log.warning("failed to load local files, will attempt new fetch...")
 
         self._fetch_tickers(period, cols)
 
         if self._save:
-            self._prepare_save_path()
+            setup_finq_save_path(self._save_path)
             self._save_info_and_data()
 
         return self
@@ -379,7 +486,27 @@ class Dataset(object):
         cols: List[str] = ["Open", "High", "Low", "Close"],
         resave: bool = True,
     ) -> Dataset:
-        """ """
+        """
+        Compares each tickers dates in their corresponding ``pd.DataFrame`` and compares
+        to the known set of dates collected. If there are any missing values, will add
+        the missing dates to the dataframe and then use ``df.interpolate()`` to fix them.
+        Default interpolation strategy is ``linear``.
+
+        Parameters
+        ----------
+        cols : list
+            The columns of the ``pd.DataFrame`` to consider when looking for missing data
+            to interpolate. Defaults to (``Open``, ``High``, ``Low``, ``Close``).
+        resave : bool
+            Whether or not to resave the data to local path after fixing missing values.
+            Defaults to ``True`` but will onlyesave if there existed missing data.
+
+        Returns
+        -------
+        Dataset
+            The initialized instance of ``self``.
+
+        """
 
         log.info("attempting to fix any missing data...")
 
@@ -448,7 +575,7 @@ class Dataset(object):
         log.info("OK!")
         return self
 
-    def run(self, period: str = "1y") -> Union[FileNotFoundError, ValueError, Dataset]:
+    def run(self, period: str = "1y") -> Dataset:
         """
         Call the three core methods for the ``Dataset`` class which fetches data,
         tries to fix missing values, and lastly verifies that there is no missing data.
@@ -464,18 +591,6 @@ class Dataset(object):
         -------
         Dataset
             The intialized instance of ``self``.
-
-        Raises
-        ------
-        FileNotFoundError
-            If the function ``load_local_data()`` fails to find the local data
-            filepaths for the initialized dataset. This can only occur if you
-            call ``fetch_data(period)`` with locally saved data and the paths
-            are removed during the function call.
-
-        ValueError
-            If the data is not valid when calling ``verify_data()``, i.e., it contains
-            missing values.
 
         """
         return self.fetch_data(period).fix_missing_data().verify_data()
@@ -554,9 +669,9 @@ class Dataset(object):
         plt.legend(loc=legend_loc)
 
         if save_path:
-            log.debug(f"saving plot to path {save_path}")
+            log.info(f"saving plot to path {save_path}")
             plt.savefig(save_path)
-            log.debug("OK!")
+            log.info("OK!")
 
         if show:
             plt.show(block=block)

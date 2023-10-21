@@ -22,8 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-12
+Last updated: 2023-10-21
 """
 
 from .cached_rate_limiter import CachedRateLimiter  # noqa
-from .nasdaq_requests import _fetch_names_and_symbols  # noqa
+from .path_utils import (
+    all_tickers_saved,  # noqa
+    default_finq_cache_path,  # noqa
+    default_finq_save_path,  # noqa
+    setup_finq_save_path,  # noqa
+)
+from .nasdaq_utils import fetch_names_and_symbols  # noqa

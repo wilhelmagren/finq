@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-20
+Last updated: 2023-10-21
 """
 
 import logging
@@ -38,10 +38,10 @@ from datetime import (
     timedelta,
 )
 from typing import (
+    Any,
     Union,
     List,
     Dict,
-    Literal,
     Tuple,
     Optional,
     Callable,
@@ -59,15 +59,15 @@ IMPLEMENTED_INDEX = (
 )
 
 
-def _fetch_names_and_symbols(
+def fetch_names_and_symbols(
     index: str,
     *,
     session: Optional[requests.Session] = None,
-    query_params: Dict = {},
-    headers: Dict = {},
-    market: Literal["NASDAQ", "OMX"] = "OMX",
+    query_params: Dict[Any, Any] = {},
+    headers: Dict[Any, Any] = {},
+    market: str = "OMX",
     filter_symbols: Callable = lambda s: s,
-) -> Union[Exception, Tuple[List[str], List[str]]]:
+) -> Union[HTTPError, Tuple[List[str], List[str]]]:
     """ """
 
     if index not in IMPLEMENTED_INDEX:
@@ -126,11 +126,6 @@ def _fetch_names_and_symbols(
 
     os.remove(tmp_xlsx_path)
     log.debug("OK!")
-
-    if market == "OMX":
-
-        def filter_symbols(s):
-            return s.replace(" ", "-") + ".ST"
 
     names = df["Company Name"].tolist()
     symbols = list(
