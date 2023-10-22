@@ -363,7 +363,7 @@ class Dataset(object):
             bar.set_description(f"Fetching ticker {ticker} data from Yahoo! Finance")
 
             fetched = yf.Ticker(ticker, session=self._session)
-            info[ticker] = fetched.info
+            info[ticker] = fetched.get_info(proxy=self._proxy)
 
             data[ticker] = fetched.history(
                 period=period,
