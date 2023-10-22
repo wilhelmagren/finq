@@ -22,13 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-21
+Last updated: 2023-10-22
 """
 
 import shutil
 import unittest
-import numpy as np
 import pandas as pd
+import numpy as np
 from pathlib import Path
 
 from finq.datautil import default_finq_save_path

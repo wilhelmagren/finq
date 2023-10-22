@@ -22,14 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-21
+Last updated: 2023-10-22
 """
 
 import os
 import shutil
 import unittest
 import numpy as np
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch
 from pathlib import Path
 
 from .mock_df import _random_df
@@ -76,7 +76,7 @@ class CustomDatasetTest(unittest.TestCase):
         if path.is_dir():
             shutil.rmtree(path)
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_visualize(self, mock_ticker_data, mock_ticker_info):
         """ """
@@ -104,7 +104,7 @@ class CustomDatasetTest(unittest.TestCase):
         self.assertTrue(png_path.exists())
         os.remove(png_path)
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_data_no_save(self, mock_ticker_data, mock_ticker_info):
         """ """
@@ -132,7 +132,7 @@ class CustomDatasetTest(unittest.TestCase):
 
         self.assertTrue(isinstance(dataset.as_numpy(), np.ndarray))
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_data_save(self, mock_ticker_data, mock_ticker_info):
         """ """
@@ -174,7 +174,7 @@ class CustomDatasetTest(unittest.TestCase):
         )
 
     @patch("finq.datautil.fetch_names_and_symbols")
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_index_data(self, mock_ticker_data, mock_ticker_info, mock_get):
         """ """
@@ -217,7 +217,7 @@ class CustomDatasetTest(unittest.TestCase):
         stocks_found_in_index = all([t in dataset.get_tickers() for t in top_stocks])
         self.assertTrue(stocks_found_in_index)
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_then_load(self, mock_ticker_data, mock_ticker_info):
         """ """
