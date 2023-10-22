@@ -22,12 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-21
+Last updated: 2023-10-22
 """
 
 import shutil
 import unittest
-from unittest.mock import patch, PropertyMock
+from unittest.mock import patch
 
 from .mock_df import _random_df
 from finq.datasets import NDX
@@ -52,7 +52,7 @@ class NDXTest(unittest.TestCase):
         if path.is_dir():
             shutil.rmtree(path)
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_then_load(self, mock_ticker_data, mock_ticker_info):
         """ """
@@ -94,7 +94,7 @@ class NDXTest(unittest.TestCase):
             len(n.get_data()["AMD"].index.values),
         )
 
-    @patch("yfinance.Ticker.info", new_callable=PropertyMock)
+    @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
     def test_fetch_then_as_assets(self, mock_ticker_data, mock_ticker_info):
         """ """
