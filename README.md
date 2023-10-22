@@ -24,7 +24,7 @@
 ## 🔎 Overview
 The goal of *finq* is to provide an all-in-one Python library for **quantitative portfolio analysis and optimization** on historical and real-time financial data.
 
-**NOTE:** Features are currently being determined and developed continuously. The repo is undergoing heavy modifications and could introduce **breaking changes** up until first major release. Current version is **v0.2.1**.
+**NOTE:** Features are currently being determined and developed continuously. The repo is undergoing heavy modifications and could introduce **breaking changes** up until first major release. Current version is **v0.3.0**.
 
 ## 📦 Installation
 Either clone this repository and perform a local install with [poetry](https://github.com/python-poetry/poetry/tree/master) accordingly
