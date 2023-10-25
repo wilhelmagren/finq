@@ -61,11 +61,11 @@ class Asset(object):
 
     def period_returns_mean(self, period: int = 1) -> np.float32:
         """ """
-        return self.period_returns().mean(axis=0).as_numpy().astype(np.float32)
+        return self.period_returns(period=period).mean(axis=0)
 
-    def volatility(self, period: int = 1) -> np.float32:
+    def volatility(self, period: int = 1, trading_days: int = 252) -> np.float32:
         """ """
-        return self.period_returns().std() * np.sqrt(period)
+        return self.period_returns(period=period).std() * np.sqrt(trading_days)
 
     def skewness(self) -> np.float32:
         """ """

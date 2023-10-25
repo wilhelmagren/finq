@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-22
+Last updated: 2023-10-25
 """
 
 import shutil
@@ -35,7 +35,7 @@ from finq.datautil import default_finq_save_path
 from finq.datasets import OMXS30
 
 
-class OMXS30Test(unittest.TestCase):
+class OMXS30Tests(unittest.TestCase):
     """
     NOTE: This is the only index that we will not mock. This is relatively small enough
     so we are not generating a lot of traffic when testing without mock. For all other

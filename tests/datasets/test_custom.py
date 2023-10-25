@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-22
+Last updated: 2023-10-25
 """
 
 import os
@@ -38,7 +38,7 @@ from finq.datautil import default_finq_save_path
 from finq import InvalidCombinationOfArgumentsError
 
 
-class CustomDatasetTest(unittest.TestCase):
+class CustomDatasetTests(unittest.TestCase):
     """ """
 
     def setUp(self):

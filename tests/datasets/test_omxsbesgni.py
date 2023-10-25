@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-22
+Last updated: 2023-10-25
 """
 
 import shutil
@@ -34,7 +34,7 @@ from finq.datautil import default_finq_save_path
 from finq.datasets import OMXSBESGNI
 
 
-class OMXSBESGNITest(unittest.TestCase):
+class OMXSBESGNITests(unittest.TestCase):
     """ """
 
     def setUp(self):
