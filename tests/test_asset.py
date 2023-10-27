@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-25
-Last updated: 2023-10-25
+Last updated: 2023-10-28
 """
 
 import unittest
@@ -30,6 +30,22 @@ import pandas as pd
 import numpy as np
 
 from finq import Asset
+
+
+def _k_moment(x: np.ndarray, i: int) -> np.float32:
+    """ """
+    n = x.shape[0]
+    return ((x - x.mean()) ** i).sum() / n
+
+
+def _adjusted_fisher_pearson_skewness_coefficient(x: np.ndarray) -> np.float32:
+    """ """
+    n = x.shape[0]
+    coeff = np.sqrt(n * (n - 1)) / (n - 2)
+    m3 = _k_moment(x, 3)
+    m2 = _k_moment(x, 2)
+
+    return coeff * (m3 / (m2 ** (3 / 2)))
 
 
 def _assert_all_close(
@@ -117,4 +133,59 @@ class AssetTests(unittest.TestCase):
             "volatile",
         )
 
-        a.volatility()
+        a_vol = a.volatility()
+        a_expected = a.period_returns().std() * np.sqrt(252)
+        _assert_all_close(
+            a_expected,
+            a_vol,
+            self,
+        )
+
+        a_vol_four = a.volatility(trading_days=4)
+        a_expected_four = a.period_returns().std() * np.sqrt(4)
+        _assert_all_close(
+            a_expected_four,
+            a_vol_four,
+            self,
+        )
+
+        a_vol_weekly_year = a.volatility(period=7)
+        a_expected_weekly_year = a.period_returns(period=7).std() * np.sqrt(252)
+        _assert_all_close(
+            a_expected_weekly_year,
+            a_vol_weekly_year,
+            self,
+        )
+
+    def test_skewness(self):
+        """ """
+
+        a = Asset(
+            pd.Series([-1, -0.5, 0.0, 1.0, 2.0]),
+            "skew",
+        )
+
+        a_skew = a.skewness()
+        a_expected = _adjusted_fisher_pearson_skewness_coefficient(
+            np.array([-1, -0.5, 0.0, 1.0, 2.0]),
+        )
+        _assert_all_close(
+            a_expected,
+            a_skew,
+            self,
+        )
+
+        b = Asset(
+            pd.Series([-100, -50, -50, -20, -10, 0, 2]),
+            "skew-big",
+        )
+
+        b_skew = b.skewness()
+        b_expected = _adjusted_fisher_pearson_skewness_coefficient(
+            np.array([-100, -50, -50, -20, -10, 0, 2]),
+        )
+        _assert_all_close(
+            b_expected,
+            b_skew,
+            self,
+        )
