@@ -47,6 +47,7 @@ class Asset(object):
         market: Optional[str] = None,
         index_name: Optional[str] = None,
         price_type: str = "Close",
+        pre_compute: bool = True,
     ):
         """ """
 
@@ -55,15 +56,13 @@ class Asset(object):
         self._market = market
         self._index_name = index_name
         self._price_type = price_type
-
-        log.debug("pre-computing some standard quantitives used for an Asset...")
+        self._pre_compute = pre_compute
         self._metrics = {}
-        self._metrics["daily_returns"] = self.period_returns(period=1)
-        self._metrics["daily_returns_mean"] = self.period_returns_mean(period=1)
-        self._metrics["yearly_returns_mean"] = self.period_returns_mean(period=252)
-        self._metrics["yearly_volatility"] = self.volatility(period=1, trading_days=252)
-        self._metrics["skewness"] = self.skewness()
-        log.debug("OK!")
+
+        if pre_compute:
+            log.info("pre-computing some common metrics...")
+            self.compute_common_metrics()
+            log.info("OK!")
 
     def __str__(self) -> str:
         """ """
@@ -76,17 +75,34 @@ class Asset(object):
 
         format += f" (price type: {self._price_type})"
         format += f"\n-- num samples:\t\t\t{self._data.shape[0]}"
-        format += (
-            f"\n-- daily returns mean:\t\t{self._metrics['daily_returns_mean']:.5f}"
-        )
-        format += (
-            f"\n-- yearly returns mean:\t\t{self._metrics['yearly_returns_mean']:.5f}"
-        )
-        format += f"\n-- yearly volatility:\t\t{self._metrics['yearly_volatility']:.5f}"
-        format += f"\n-- unbiased skewness:\t\t{self._metrics['skewness']:.5f}"
+
+        drm = self._metrics.get("daily_returns_mean", None)
+        if drm:
+            format += f"\n-- daily returns mean:\t\t{drm:.5f}"
+
+        yrm = self._metrics.get("yearly_returns_mean", None)
+        if yrm:
+            format += f"\n-- yearly returns mean:\t\t{yrm:.5f}"
+
+        yv = self._metrics.get("yearly_volatility", None)
+        if yv:
+            format += f"\n-- yearly volatility:\t\t{yv:.5f}"
+
+        skew = self._metrics.get("skewness", None)
+        if skew:
+            format += f"\n-- unbiased skewness:\t\t{self._metrics['skewness']:.5f}"
+
         format += f"\nobject located at {hex(id(self))}>"
 
         return format
+
+    def compute_common_metrics(self):
+        """ """
+        self._metrics["daily_returns"] = self.period_returns(period=1)
+        self._metrics["daily_returns_mean"] = self.period_returns_mean(period=1)
+        self._metrics["yearly_returns_mean"] = self.period_returns_mean(period=252)
+        self._metrics["yearly_volatility"] = self.volatility(period=1, trading_days=252)
+        self._metrics["skewness"] = self.skewness()
 
     def period_returns(self, period: int = 1) -> pd.Series:
         """ """
