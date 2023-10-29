@@ -102,6 +102,8 @@ class Asset(object):
         return hash(
             (
                 len(self._data),
+                self._data.mean(),
+                self._data.std(),
                 self._name,
                 self._market,
                 self._index_name,
