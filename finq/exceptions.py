@@ -22,14 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-21
+Last updated: 2023-10-29
 """
-
-
-class InvalidCombinationOfArgumentsError(Exception):
-    """ """
-
-    pass
 
 
 class DirectoryNotFoundError(Exception):
@@ -38,7 +32,19 @@ class DirectoryNotFoundError(Exception):
     pass
 
 
+class InvalidCombinationOfArgumentsError(Exception):
+    """ """
+
+    pass
+
+
 class NoFeasibleSolutionError(Exception):
+    """ """
+
+    pass
+
+
+class PortfolioNotYetOptimizedError(Exception):
     """ """
 
     pass
