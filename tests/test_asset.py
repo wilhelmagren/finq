@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-25
-Last updated: 2023-10-28
+Last updated: 2023-10-29
 """
 
 import unittest
@@ -68,6 +68,41 @@ def _assert_all_close(
 
 class AssetTests(unittest.TestCase):
     """ """
+
+    def test_equality(self):
+        """ """
+
+        a = Asset(
+            pd.Series(np.random.uniform(10, 1000, size=(4000,))),
+            "XD",
+            market="kebab",
+            index_name="holykebab",
+            pre_compute=False,
+        )
+
+        b = Asset(
+            pd.Series(np.random.normal(200, 10, size=(200,))),
+            "cool",
+            market="NASDAQ",
+            pre_compute=True,
+        )
+
+        c = Asset(
+            b.data,
+            "cool",
+            market="NASDAQ",
+            pre_compute=True,
+        )
+
+        self.assertEqual(b, c)
+        self.assertNotEqual(a, b)
+        self.assertNotEqual(a, c)
+        self.assertNotEqual(a, 40)
+        self.assertNotEqual(a, "xd")
+        self.assertNotEqual(c, b"0903910")
+
+        b.data = pd.Series(np.random.normal(100, 10, size=(40,)))
+        self.assertNotEqual(b, c)
 
     def test_period_returns(self):
         """ """
