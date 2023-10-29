@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-18
-Last updated: 2023-10-28
+Last updated: 2023-10-29
 """
 
 import numpy.typing
@@ -30,6 +30,7 @@ import logging
 import numpy as np
 import pandas as pd
 from typing import (
+    Any,
     Optional,
 )
 
@@ -63,6 +64,50 @@ class Asset(object):
             log.info("pre-computing some common metrics...")
             self.compute_common_metrics()
             log.info("OK!")
+
+    def __eq__(self, other: Any) -> bool:
+        """
+        Compare self with the other object. If ``other`` is of instance class
+        ``Asset`` then compare their hashes. Otherwise ``False``.
+
+        Parameters
+        ----------
+        other : Any
+            The other object to compare equality against.
+
+        Returns
+        -------
+        bool
+            Whether or not they objects are equal.
+
+        """
+        if isinstance(other, self.__class__):
+            return hash(self) == hash(other)
+        return False
+
+    def __hash__(self) -> int:
+        """
+        Compute a hash from the following attributes of the ``Asset`` object:
+        (`_name`, `_market_`, `_index_name`, `_price_type`).
+
+        NOTE: the ``Asset`` object is mutable, thus, the hash functionality
+        can have unknown side effects... Use responsibly.
+
+        Returns
+        -------
+        int
+            The computed hash value.
+
+        """
+        return hash(
+            (
+                len(self._data),
+                self._name,
+                self._market,
+                self._index_name,
+                self._price_type,
+            )
+        )
 
     def __str__(self) -> str:
         """ """
@@ -140,23 +185,6 @@ class Asset(object):
         """
         return self._data.skew().astype(np.float32)
 
-    def historical_mean_return(self, trading_days: int = 252) -> np.typing.DTypeLike:
-        """
-        Compute the historical mean return for a given period.
-
-        Parameters
-        ----------
-        trading_days : int
-            The number of trading days to use when calculating the historical mean return.
-
-        Returns
-        -------
-        np.typing.DTypeLike
-            The historical mean return of the ``Asset``.
-
-        """
-        return self.period_returns_mean(period=1) * trading_days
-
     @property
     def data(self) -> pd.Series:
         """
@@ -204,14 +232,14 @@ class Asset(object):
         Parameters
         ----------
         name : str
-            THe new ``str`` to set as name attribute for the object.
+            The new ``str`` to set as name attribute for the object.
 
         """
         self._name = name
 
     def as_numpy(self, dtype: np.typing.DTypeLike = np.float32) -> np.ndarray:
         """
-        Return the saved data as an numpy array. It will have the shape (n_sample, ).
+        Return the saved data as an numpy array. It will have the shape (n_samples, ).
 
         Parameters
         ----------
