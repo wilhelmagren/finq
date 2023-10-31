@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-22
+Last updated: 2023-10-31
 """
 
 from __future__ import annotations
@@ -42,9 +42,13 @@ from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
     all_tickers_saved,
+    all_tickers_data_saved,
+    all_tickers_info_saved,
     default_finq_cache_path,
     default_finq_save_path,
     setup_finq_save_path,
+    setup_finq_save_data_path,
+    setup_finq_save_info_path,
     fetch_names_and_symbols,
 )
 from tqdm import tqdm
@@ -183,6 +187,9 @@ class Dataset(object):
                 f"{len(names)} != {len(symbols)}.\n{names=}\n{symbols=}"
             )
 
+        self._data = None
+        self._info = None
+
         self._names = names
         self._symbols = symbols
         self._market = market
@@ -212,22 +219,6 @@ class Dataset(object):
         return self._data.get(key, None)
 
     @staticmethod
-    def _save_info(info: dict, path: Union[Path, str]):
-        """
-        Save the ticker information dictionary to a local file as a ``json`` object.
-
-        Parameters
-        ----------
-        info : dict
-            The ticker information dictionary to save as a ``json`` file.
-        path : Path | str
-            The local file name to save the dictionary to.
-
-        """
-        with open(path, "w") as f:
-            json.dump(info, f)
-
-    @staticmethod
     def _save_data(data: pd.DataFrame, path: Union[Path, str], separator: str):
         """
         Save the historical price data for a ticker to a local csv file.
@@ -245,21 +236,20 @@ class Dataset(object):
         data.to_csv(path, sep=separator)
 
     @staticmethod
-    def _load_info(path: Union[Path, str]) -> dict:
+    def _save_info(info: dict, path: Union[Path, str]):
         """
+        Save the ticker information dictionary to a local file as a ``json`` object.
+
         Parameters
         ----------
+        info : dict
+            The ticker information dictionary to save as a ``json`` file.
         path : Path | str
-            The local file path to read the json object from.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the information for the ticker.
+            The local file name to save the dictionary to.
 
         """
-        with open(path, "r") as f:
-            return json.load(f)
+        with open(path, "w") as f:
+            json.dump(info, f)
 
     @staticmethod
     def _load_data(path: Union[Path, str], separator: str) -> pd.DataFrame:
@@ -281,6 +271,23 @@ class Dataset(object):
         """
         return pd.read_csv(path, sep=separator)
 
+    @staticmethod
+    def _load_info(path: Union[Path, str]) -> dict:
+        """
+        Parameters
+        ----------
+        path : Path | str
+            The local file path to read the json object from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the information for the ticker.
+
+        """
+        with open(path, "r") as f:
+            return json.load(f)
+    
     @staticmethod
     def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
         """
@@ -315,19 +322,14 @@ class Dataset(object):
             .tolist()
         )
 
-        return unique_dates, dates
+        return (unique_dates, dates)
 
-    def _save_info_and_data(self):
-        """
-        Saves the info and data objects to a local file path.
+    def _save_tickers_data(self):
+        """ """
 
-        """
+        log.info(f"saving fetched tickers data to {self._save_path}...")
 
-        log.info(f"saving fetched tickers to {self._save_path}...")
         for ticker in self._symbols:
-            self._save_info(
-                self._info[ticker], self._save_path / "info" / f"{ticker}.json"
-            )
             self._save_data(
                 self._data[ticker],
                 self._save_path / "data" / f"{ticker}.csv",
@@ -336,7 +338,69 @@ class Dataset(object):
 
         log.info("OK!")
 
-    def _fetch_tickers(
+    def _save_tickers_info(self):
+        """ """
+
+        log.info(f"saving fetched tickers info to {self._save_path}...")
+
+        for ticker in self._symbols:
+            self._save_info(
+                self._info[ticker],
+                self._save_path / "info" / f"{ticker}.json",
+            )
+
+        log.info("OK!")
+
+    def _save_data_and_info(self):
+        """
+        Saves the info and data objects to a local file path.
+
+        """
+
+        self._save_tickers_data()
+        self._save_tickers_info()
+
+    def _fetch_tickers_data(
+        self,
+        period: str,
+        cols: List[str],
+    ):
+        """ """
+
+        data = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Fetching ticker {ticker} data from Yahoo! Finance")
+
+            yf_ticker = yf.Ticker(ticker, session=self._session)
+            data[ticker] = yf_ticker.history(
+                period=period,
+                proxy=self._proxy,
+            ).reset_index()[cols]
+
+        all_dates, dates = self._extract_dates_from_data(data)
+
+        self._data = data
+        self._dates = dates
+        self._all_dates = all_dates
+
+    def _fetch_tickers_info(
+        self,
+        period: str,
+    ):
+        """ """
+
+        info = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Fetching ticker {ticker} info from Yahoo! Finance")
+
+            yf_ticker = yf.Ticker(ticker, session=self._session)
+            info[ticker] = yf_ticker.get_info(proxy=self._proxy)
+
+        self._info = info
+
+    def _fetch_tickers_data_and_info(
         self,
         period: str,
         cols: List[str],
@@ -356,28 +420,72 @@ class Dataset(object):
 
         """
 
-        info = {}
+        self._fetch_tickers_data(period, cols)
+        self._fetch_tickers_info(period)
+
+    def load_local_data_files(self) -> Optional[DirectoryNotFoundError]:
+        """ """
+
+        path = Path(self._save_path)
+        data_path = path / "data"
+
+        if not path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {path} does not exist. Perhaps you haven't yet "
+                "tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        if not data_path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {data_path} does not exist. Perhaps you haven't "
+                "yet tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
         data = {}
 
         for ticker in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Fetching ticker {ticker} data from Yahoo! Finance")
+            bar.set_description(f"Loading ticker {ticker} data from local path {path}")
 
-            fetched = yf.Ticker(ticker, session=self._session)
-            info[ticker] = fetched.get_info(proxy=self._proxy)
-
-            data[ticker] = fetched.history(
-                period=period,
-                proxy=self._proxy,
-            ).reset_index()[cols]
+            data[ticker] = self._load_data(
+                data_path / f"{ticker}.csv",
+                separator=self._separator,
+            )
 
         all_dates, dates = self._extract_dates_from_data(data)
 
-        self._info = info
         self._data = data
         self._dates = dates
         self._all_dates = all_dates
 
-    def load_local_files(self) -> Optional[DirectoryNotFoundError]:
+    def load_local_info_files(self) -> Optional[DirectoryNotFoundError]:
+        """ """
+        path = Path(self._save_path)
+        info_path = path / "info"
+
+        if not path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {path} does not exist. Perhaps you haven't yet "
+                "tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        if not info_path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {info_path} does not exist. Perhaps you haven't "
+                "yet tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        info = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Loading ticker {ticker} data from local path {path}")
+
+            info[ticker] = self._load_info(
+                info_path / f"{ticker}.json",
+            )
+
+        self._info = info
+
+    def load_local_files(self):
         """
         Load the locally saved info and data files. The info is read from file as a
         ``json`` and the data is read from ``csv`` as a ``pd.DataFrame``.
@@ -389,45 +497,8 @@ class Dataset(object):
 
         """
 
-        path = Path(self._save_path)
-        if not path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info_path = path / "info"
-        data_path = path / "data"
-
-        if not info_path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {info_path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        if not data_path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {data_path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info = {}
-        data = {}
-
-        for ticker in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Loading ticker {ticker} from local path {path}")
-            info[ticker] = self._load_info(info_path / f"{ticker}.json")
-            data[ticker] = self._load_data(
-                data_path / f"{ticker}.csv",
-                separator=self._separator,
-            )
-
-        all_dates, dates = self._extract_dates_from_data(data)
-
-        self._info = info
-        self._data = data
-        self._dates = dates
-        self._all_dates = all_dates
+        self.load_local_data_files()
+        self.load_local_info_files()
 
     def fetch_data(
         self,
@@ -454,32 +525,70 @@ class Dataset(object):
         Returns
         -------
         Dataset
-            The initialized instance of ``self``.
+            The initialized instance of ``self`` with ticker data loaded or fetched.
 
         """
 
-        if all_tickers_saved(self._save_path, self._symbols):
+        if all_tickers_data_saved(self._save_path, self._symbols):
             log.info(
-                f"found existing local files for {self.__class__.__name__}, "
-                "attempting local load..."
+                f"found existing local data files for {self.__class__.__name__}, "
+                "attempting local load of data files..."
             )
 
             try:
-                self.load_local_files()
+                self.load_local_data_files()
                 log.info("OK!")
                 return self
-
+            
             except DirectoryNotFoundError:
-                log.warning("failed to load local files, will attempt new fetch...")
+                log.warning("failed to load local data files, attempting new fetch...")
 
-        self._fetch_tickers(period, cols)
+        self._fetch_tickers_data(period, cols)
 
         if self._save:
-            setup_finq_save_path(self._save_path)
-            self._save_info_and_data()
+            setup_finq_save_data_path(self._save_path)
+            self._save_tickers_data()
 
         return self
+    
+    def fetch_info(
+        self,
+        period: str,
+    ) -> Dataset:
+        """ """
 
+        if all_tickers_info_saved(self._save_path, self._symbols):
+            log.info(
+                f"found existing local info files for {self.__class__.__name__}, "
+                "attempting local load of info files..."
+            )
+
+            try:
+                self.load_local_info_files()
+                log.info("OK!")
+                return self
+            
+            except DirectoryNotFoundError:
+                log.warning("failed to load local info files, attempting new fetch...")
+
+        self._fetch_tickers_info(period)
+
+        if self._save:
+            setup_finq_save_info_path(self._save_path)
+
+        return self
+    
+    def fetch_data_and_info(
+        self,
+        period: str,
+        *,
+        cols: List[str] = ["Date", "Open", "High", "Low", "Close"],
+    ) -> Dataset:
+        """ """
+        self = self.fetch_data(period, cols=cols)
+        self = self.fetch_info(period)
+        return self
+    
     def fix_missing_data(
         self,
         *,
@@ -537,7 +646,7 @@ class Dataset(object):
             log.info(f"fixed {n_missing_data} tickers with missing data")
             if self._save:
                 log.info(f"saving fixed data to {self._save_path}...")
-                self._save_info_and_data()
+                self._save_tickers_data()
 
         log.info("OK!")
         return self
