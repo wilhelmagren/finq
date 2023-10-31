@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging
 import json
 import matplotlib.pyplot as plt
+import mplfinance as mpf
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -58,6 +59,7 @@ from pyrate_limiter import (
 
 from pathlib import Path
 from typing import (
+    Any,
     Optional,
     Callable,
     Dict,
@@ -231,7 +233,11 @@ class Dataset(object):
             The csv separator to use when saving the data. Defaults to ``;``.
 
         """
-        data.to_csv(path, sep=separator)
+        data.to_csv(
+            path,
+            sep=separator,
+            header=True,
+        )
 
     @staticmethod
     def _save_info(info: dict, path: Union[Path, str]):
@@ -267,7 +273,7 @@ class Dataset(object):
             The data that was stored in the csv.
 
         """
-        return pd.read_csv(path, sep=separator)
+        return pd.read_csv(path, sep=separator, index_col="Date")
 
     @staticmethod
     def _load_info(path: Union[Path, str]) -> dict:
@@ -308,17 +314,10 @@ class Dataset(object):
         all_dates = []
 
         for ticker, df in data.items():
-            dates[ticker] = df["Date"].tolist()
+            dates[ticker] = df.index.to_list()
             all_dates.extend(dates[ticker])
 
-        unique_dates = (
-            pd.DataFrame({"Date": list(set(all_dates))})
-            .sort_values(
-                by="Date",
-                ascending=True,
-            )["Date"]
-            .tolist()
-        )
+        unique_dates = sorted(list(set(all_dates)), reverse=False)
 
         return (unique_dates, dates)
 
@@ -374,7 +373,9 @@ class Dataset(object):
             data[ticker] = yf_ticker.history(
                 period=period,
                 proxy=self._proxy,
-            ).reset_index()[cols]
+            )[
+                cols
+            ].tz_localize(None)
 
         all_dates, dates = self._extract_dates_from_data(data)
 
@@ -446,6 +447,9 @@ class Dataset(object):
                 separator=self._separator,
             )
 
+            if not isinstance(data[ticker].index, pd.DatetimeIndex):
+                data[ticker].index = pd.to_datetime(data[ticker].index)
+
         all_dates, dates = self._extract_dates_from_data(data)
 
         self._data = data
@@ -499,7 +503,7 @@ class Dataset(object):
         self,
         period: str,
         *,
-        cols: List[str] = ["Date", "Open", "High", "Low", "Close"],
+        cols: List[str] = ["Open", "High", "Low", "Close"],
     ) -> Dataset:
         """
         Fetch the historical ticker data for the specified time period. If there exists
@@ -576,7 +580,7 @@ class Dataset(object):
         self,
         period: str,
         *,
-        cols: List[str] = ["Date", "Open", "High", "Low", "Close"],
+        cols: List[str] = ["Open", "High", "Low", "Close"],
     ) -> Dataset:
         """ """
         self = self.fetch_data(period, cols=cols)
@@ -622,10 +626,11 @@ class Dataset(object):
 
             if diff:
                 n_missing_data += 1
-                df_missed = pd.DataFrame({"Date": list(diff)})
 
-                df_fixed = pd.concat((df, df_missed), axis=0)
-                df_fixed = df_fixed.sort_values("Date", ascending=True).reset_index()
+                df_missed = pd.DataFrame(index=list(diff))
+                df_missed.index.name = "Date"
+
+                df_fixed = pd.concat((df, df_missed)).sort_index(inplace=False)
                 df_fixed[cols] = df_fixed[cols].interpolate()
 
                 if df_fixed[df_fixed.isnull().any(axis=1)].index.values.size:
@@ -698,20 +703,34 @@ class Dataset(object):
         """
         return self.fetch_data(period).fix_missing_data().verify_data()
 
+    def visualize_ticker(
+        self,
+        ticker: str,
+        **kwargs: Dict[str, Any],
+    ):
+        """ """
+
+        if kwargs.get("title", None) is None:
+            kwargs["title"] = f"{ticker} historical OHLC prices [{self._market}]"
+
+        mpf.plot(
+            self._data[ticker],
+            **kwargs,
+        )
+
     def visualize(
         self,
         *,
         title: str = "Historical stock data",
         xlabel: str = "Dates",
         ylabel: str = "Closing price [$]",
-        ticks_rotation: int = 80,
+        ticks_rotation: int = 70,
         legend_loc: str = "best",
         log_scale: bool = False,
         save_path: Optional[str] = None,
         price_type: str = "Close",
         show: bool = True,
         block: bool = True,
-        data_transform: Optional[Callable] = None,
     ):
         """
         Plot the historical ticker price data over time.
@@ -725,7 +744,7 @@ class Dataset(object):
         ylabel : str
             The label to use for the y-axis.
         ticks_rotation : int
-            The amount of degrees to rotate the x-axis ticks with. Defaults to ``80``.
+            The amount of degrees to rotate the x-axis ticks with. Defaults to ``70``.
         legend_loc : str
             The location of the legend. Some possible values are (``best``, ``center``,
             ``upper left``, ``upper right``, ``lower left``, ``lower right``).
@@ -745,23 +764,12 @@ class Dataset(object):
             Whether to wait for all figures to be closed before returning. When ``False``
             the figure windows will be displayed and returned immediately. Defaults to
             ``True``.
-        data_transform : Callable | None
-            A function which transforms the data to be used for the plot. If parameter
-            ``log_scale=True`` then it takes the value ``np.log``. Defaults to ``None``.
 
         """
 
-        if data_transform is None:
-
-            def data_transform(d):
-                return d
-
-        if log_scale:
-            data_transform = np.log
-
         for ticker, data in self._data.items():
             plt.plot(
-                data_transform(data[price_type]),
+                np.log(data[price_type]) if log_scale else data[price_type],
                 label=ticker,
             )
 
@@ -850,8 +858,10 @@ class Dataset(object):
             A new ``pd.DataFrame`` with ticker names as columns.
 
         """
+
         return pd.DataFrame(
-            {t: d[price_type] for t, d in zip(self._symbols, self._data.values())}
+            {t: d[price_type] for t, d in zip(self._symbols, self._data.values())},
+            index=self._all_dates,
         )
 
     def as_numpy(
