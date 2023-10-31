@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-12
-Last updated: 2023-10-25
+Last updated: 2023-10-31
 """
 
 import shutil
@@ -30,18 +30,15 @@ import unittest
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from unittest.mock import patch
 
+from .mock_df import _random_df
 from finq.datautil import default_finq_save_path
 from finq.datasets import OMXS30
 
 
 class OMXS30Tests(unittest.TestCase):
-    """
-    NOTE: This is the only index that we will not mock. This is relatively small enough
-    so we are not generating a lot of traffic when testing without mock. For all other
-    tests, we should mock.
-
-    """
+    """ """
 
     def setUp(self):
         """ """
@@ -57,36 +54,73 @@ class OMXS30Tests(unittest.TestCase):
         if path.is_dir():
             shutil.rmtree(path)
 
-    def test_fetch_data_no_save(self):
+    @patch("yfinance.Ticker.get_info")
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_no_save(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        mock_ticker_info.return_value = {
+            "cool info about ticker": "i own 100% of this, super green asset",
+        }
+
+        df = _random_df(["Open", "High", "Close", "Low"])
+        mock_ticker_data.return_value = df
 
         dataset = OMXS30(save=False)
 
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
-        df = dataset["SHB-A.ST"]
+        df_shb = dataset["SHB-A.ST"]
 
-        self.assertTrue(isinstance(df, pd.DataFrame))
+        self.assertTrue(isinstance(df_shb, pd.DataFrame))
         self.assertTrue(isinstance(dataset.as_numpy(), np.ndarray))
 
-    def test_fetch_data_save(self):
+    @patch("yfinance.Ticker.get_info")
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_save(self, mock_ticker_data, mock_ticker_info):
         """ """
+
+        mock_ticker_info.return_value = {
+            "cool info about ticker": "i own 100% of this, super green asset",
+        }
+
+        df = _random_df(["Open", "High", "Close", "Low"])
+        mock_ticker_data.return_value = df
 
         dataset = OMXS30(save_path=self._save_path, save=True)
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+        dataset = dataset.fetch_info()
 
-        self.assertTrue(dataset._save_path.is_dir())
+        data_path = self._save_path / self._dataset_name / "data"
+        info_path = self._save_path / self._dataset_name / "info"
 
-    def test_fetch_data_save_different_path(self):
+        self.assertTrue(data_path.is_dir())
+        self.assertTrue(info_path.is_dir())
+        self.assertEquals(30, len(dataset._data.keys()))
+        self.assertEquals(30, len(dataset.get_tickers()))
+        self.assertEquals(30, dataset.as_numpy("Close").shape[0])
+
+    @patch("yfinance.Ticker.get_info")
+    @patch("yfinance.Ticker.history")
+    def test_fetch_data_save_different_path(self, mock_ticker_data, mock_ticker_info):
         """ """
 
-        dataset = OMXS30(save_path=".", save=True)
+        mock_ticker_info.return_value = {
+            "cool info about ticker": "i own 100% of this, super green asset",
+        }
+
+        df = _random_df(["Open", "High", "Close", "Low"])
+        mock_ticker_data.return_value = df
+
+        custom_path = Path(".lolhahatest")
+
+        dataset = OMXS30(save_path=custom_path, save=True)
         dataset.run("6m")
 
-        custom_path = Path(".") / "OMXS30"
+        expected_custom_path = Path(".") / self._dataset_name
         self.assertTrue(dataset._save_path.is_dir())
         self.assertEqual(
+            expected_custom_path,
             dataset._save_path,
-            custom_path,
         )
 
-        shutil.rmtree(custom_path)
+        shutil.rmtree(expected_custom_path)

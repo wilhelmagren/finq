@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-25
+Last updated: 2023-10-31
 """
 
 import shutil
@@ -64,7 +64,8 @@ class OMXSBESGNITests(unittest.TestCase):
         mock_ticker_data.return_value = df
 
         d = OMXSBESGNI(save=True, save_path=self._save_path)
-        d.run("1y")
+        d = d.run("1y")
+        d = d.fetch_info()
 
         info_path = self._save_path / self._dataset_name / "info"
         data_path = self._save_path / self._dataset_name / "data"

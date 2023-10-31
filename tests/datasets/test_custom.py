@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-11
-Last updated: 2023-10-25
+Last updated: 2023-10-31
 """
 
 import os
@@ -154,6 +154,7 @@ class CustomDatasetTests(unittest.TestCase):
         )
 
         dataset = dataset.fetch_data("1y").fix_missing_data().verify_data()
+        dataset = dataset.fetch_info()
 
         self.assertEqual(
             dataset.get_tickers(),
@@ -239,6 +240,7 @@ class CustomDatasetTests(unittest.TestCase):
         )
 
         dataset.run("1y")
+        dataset = dataset.fetch_info()
 
         info_path = self._save_path / self._dataset_name / "info"
         data_path = self._save_path / self._dataset_name / "data"
