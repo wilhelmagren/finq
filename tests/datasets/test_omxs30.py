@@ -95,9 +95,9 @@ class OMXS30Tests(unittest.TestCase):
 
         self.assertTrue(data_path.is_dir())
         self.assertTrue(info_path.is_dir())
-        self.assertEquals(30, len(dataset._data.keys()))
-        self.assertEquals(30, len(dataset.get_tickers()))
-        self.assertEquals(30, dataset.as_numpy("Close").shape[0])
+        self.assertEqual(30, len(dataset._data.keys()))
+        self.assertEqual(30, len(dataset.get_tickers()))
+        self.assertEqual(30, dataset.as_numpy("Close").shape[0])
 
     @patch("yfinance.Ticker.get_info")
     @patch("yfinance.Ticker.history")
@@ -116,11 +116,11 @@ class OMXS30Tests(unittest.TestCase):
         dataset = OMXS30(save_path=custom_path, save=True)
         dataset.run("6m")
 
-        expected_custom_path = Path(".") / self._dataset_name
+        expected_custom_path = custom_path / self._dataset_name
         self.assertTrue(dataset._save_path.is_dir())
         self.assertEqual(
             expected_custom_path,
             dataset._save_path,
         )
 
-        shutil.rmtree(expected_custom_path)
+        shutil.rmtree(custom_path)
