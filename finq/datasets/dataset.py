@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-22
+Last updated: 2023-10-31
 """
 
 from __future__ import annotations
@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging
 import json
 import matplotlib.pyplot as plt
+import mplfinance as mpf
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -41,10 +42,12 @@ from finq.exceptions import (
 from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
-    all_tickers_saved,
+    all_tickers_data_saved,
+    all_tickers_info_saved,
     default_finq_cache_path,
     default_finq_save_path,
-    setup_finq_save_path,
+    setup_finq_save_data_path,
+    setup_finq_save_info_path,
     fetch_names_and_symbols,
 )
 from tqdm import tqdm
@@ -56,6 +59,7 @@ from pyrate_limiter import (
 
 from pathlib import Path
 from typing import (
+    Any,
     Optional,
     Callable,
     Dict,
@@ -183,6 +187,9 @@ class Dataset(object):
                 f"{len(names)} != {len(symbols)}.\n{names=}\n{symbols=}"
             )
 
+        self._data = None
+        self._info = None
+
         self._names = names
         self._symbols = symbols
         self._market = market
@@ -212,22 +219,6 @@ class Dataset(object):
         return self._data.get(key, None)
 
     @staticmethod
-    def _save_info(info: dict, path: Union[Path, str]):
-        """
-        Save the ticker information dictionary to a local file as a ``json`` object.
-
-        Parameters
-        ----------
-        info : dict
-            The ticker information dictionary to save as a ``json`` file.
-        path : Path | str
-            The local file name to save the dictionary to.
-
-        """
-        with open(path, "w") as f:
-            json.dump(info, f)
-
-    @staticmethod
     def _save_data(data: pd.DataFrame, path: Union[Path, str], separator: str):
         """
         Save the historical price data for a ticker to a local csv file.
@@ -242,24 +233,27 @@ class Dataset(object):
             The csv separator to use when saving the data. Defaults to ``;``.
 
         """
-        data.to_csv(path, sep=separator)
+        data.to_csv(
+            path,
+            sep=separator,
+            header=True,
+        )
 
     @staticmethod
-    def _load_info(path: Union[Path, str]) -> dict:
+    def _save_info(info: dict, path: Union[Path, str]):
         """
+        Save the ticker information dictionary to a local file as a ``json`` object.
+
         Parameters
         ----------
+        info : dict
+            The ticker information dictionary to save as a ``json`` file.
         path : Path | str
-            The local file path to read the json object from.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the information for the ticker.
+            The local file name to save the dictionary to.
 
         """
-        with open(path, "r") as f:
-            return json.load(f)
+        with open(path, "w") as f:
+            json.dump(info, f)
 
     @staticmethod
     def _load_data(path: Union[Path, str], separator: str) -> pd.DataFrame:
@@ -279,7 +273,24 @@ class Dataset(object):
             The data that was stored in the csv.
 
         """
-        return pd.read_csv(path, sep=separator)
+        return pd.read_csv(path, sep=separator, index_col="Date")
+
+    @staticmethod
+    def _load_info(path: Union[Path, str]) -> dict:
+        """
+        Parameters
+        ----------
+        path : Path | str
+            The local file path to read the json object from.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the information for the ticker.
+
+        """
+        with open(path, "r") as f:
+            return json.load(f)
 
     @staticmethod
     def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
@@ -303,31 +314,19 @@ class Dataset(object):
         all_dates = []
 
         for ticker, df in data.items():
-            dates[ticker] = df["Date"].tolist()
+            dates[ticker] = df.index.to_list()
             all_dates.extend(dates[ticker])
 
-        unique_dates = (
-            pd.DataFrame({"Date": list(set(all_dates))})
-            .sort_values(
-                by="Date",
-                ascending=True,
-            )["Date"]
-            .tolist()
-        )
+        unique_dates = sorted(list(set(all_dates)), reverse=False)
 
-        return unique_dates, dates
+        return (unique_dates, dates)
 
-    def _save_info_and_data(self):
-        """
-        Saves the info and data objects to a local file path.
+    def _save_tickers_data(self):
+        """ """
 
-        """
+        log.info(f"saving fetched tickers data to {self._save_path}...")
 
-        log.info(f"saving fetched tickers to {self._save_path}...")
         for ticker in self._symbols:
-            self._save_info(
-                self._info[ticker], self._save_path / "info" / f"{ticker}.json"
-            )
             self._save_data(
                 self._data[ticker],
                 self._save_path / "data" / f"{ticker}.csv",
@@ -336,7 +335,68 @@ class Dataset(object):
 
         log.info("OK!")
 
-    def _fetch_tickers(
+    def _save_tickers_info(self):
+        """ """
+
+        log.info(f"saving fetched tickers info to {self._save_path}...")
+
+        for ticker in self._symbols:
+            self._save_info(
+                self._info[ticker],
+                self._save_path / "info" / f"{ticker}.json",
+            )
+
+        log.info("OK!")
+
+    def _save_data_and_info(self):
+        """
+        Saves the info and data objects to a local file path.
+
+        """
+
+        self._save_tickers_data()
+        self._save_tickers_info()
+
+    def _fetch_tickers_data(
+        self,
+        period: str,
+        cols: List[str],
+    ):
+        """ """
+
+        data = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Fetching ticker {ticker} data from Yahoo! Finance")
+
+            yf_ticker = yf.Ticker(ticker, session=self._session)
+            data[ticker] = yf_ticker.history(
+                period=period,
+                proxy=self._proxy,
+            )[
+                cols
+            ].tz_localize(None)
+
+        all_dates, dates = self._extract_dates_from_data(data)
+
+        self._data = data
+        self._dates = dates
+        self._all_dates = all_dates
+
+    def _fetch_tickers_info(self):
+        """ """
+
+        info = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Fetching ticker {ticker} info from Yahoo! Finance")
+
+            yf_ticker = yf.Ticker(ticker, session=self._session)
+            info[ticker] = yf_ticker.get_info(proxy=self._proxy)
+
+        self._info = info
+
+    def _fetch_tickers_data_and_info(
         self,
         period: str,
         cols: List[str],
@@ -356,28 +416,75 @@ class Dataset(object):
 
         """
 
-        info = {}
+        self._fetch_tickers_data(period, cols)
+        self._fetch_tickers_info()
+
+    def load_local_data_files(self) -> Optional[DirectoryNotFoundError]:
+        """ """
+
+        path = Path(self._save_path)
+        data_path = path / "data"
+
+        if not path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {path} does not exist. Perhaps you haven't yet "
+                "tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        if not data_path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {data_path} does not exist. Perhaps you haven't "
+                "yet tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
         data = {}
 
         for ticker in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Fetching ticker {ticker} data from Yahoo! Finance")
+            bar.set_description(f"Loading ticker {ticker} data from local path {path}")
 
-            fetched = yf.Ticker(ticker, session=self._session)
-            info[ticker] = fetched.get_info(proxy=self._proxy)
+            data[ticker] = self._load_data(
+                data_path / f"{ticker}.csv",
+                separator=self._separator,
+            )
 
-            data[ticker] = fetched.history(
-                period=period,
-                proxy=self._proxy,
-            ).reset_index()[cols]
+            if not isinstance(data[ticker].index, pd.DatetimeIndex):
+                data[ticker].index = pd.to_datetime(data[ticker].index)
 
         all_dates, dates = self._extract_dates_from_data(data)
 
-        self._info = info
         self._data = data
         self._dates = dates
         self._all_dates = all_dates
 
-    def load_local_files(self) -> Optional[DirectoryNotFoundError]:
+    def load_local_info_files(self) -> Optional[DirectoryNotFoundError]:
+        """ """
+        path = Path(self._save_path)
+        info_path = path / "info"
+
+        if not path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {path} does not exist. Perhaps you haven't yet "
+                "tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        if not info_path.is_dir():
+            raise DirectoryNotFoundError(
+                f"The local save path {info_path} does not exist. Perhaps you haven't "
+                "yet tried fetching any data? To do that run `dataset.fetch_data(..)`."
+            )
+
+        info = {}
+
+        for ticker in (bar := tqdm(self._symbols)):
+            bar.set_description(f"Loading ticker {ticker} data from local path {path}")
+
+            info[ticker] = self._load_info(
+                info_path / f"{ticker}.json",
+            )
+
+        self._info = info
+
+    def load_local_files(self):
         """
         Load the locally saved info and data files. The info is read from file as a
         ``json`` and the data is read from ``csv`` as a ``pd.DataFrame``.
@@ -389,51 +496,14 @@ class Dataset(object):
 
         """
 
-        path = Path(self._save_path)
-        if not path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info_path = path / "info"
-        data_path = path / "data"
-
-        if not info_path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {info_path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        if not data_path.is_dir():
-            raise DirectoryNotFoundError(
-                f"The local save path {data_path} does not exist. Perhaps you haven't "
-                "tried fetching any data? To do that, run `dataset.fetch_data(...)`."
-            )
-
-        info = {}
-        data = {}
-
-        for ticker in (bar := tqdm(self._symbols)):
-            bar.set_description(f"Loading ticker {ticker} from local path {path}")
-            info[ticker] = self._load_info(info_path / f"{ticker}.json")
-            data[ticker] = self._load_data(
-                data_path / f"{ticker}.csv",
-                separator=self._separator,
-            )
-
-        all_dates, dates = self._extract_dates_from_data(data)
-
-        self._info = info
-        self._data = data
-        self._dates = dates
-        self._all_dates = all_dates
+        self.load_local_data_files()
+        self.load_local_info_files()
 
     def fetch_data(
         self,
         period: str,
         *,
-        cols: List[str] = ["Date", "Open", "High", "Low", "Close"],
+        cols: List[str] = ["Open", "High", "Low", "Close"],
     ) -> Dataset:
         """
         Fetch the historical ticker data for the specified time period. If there exists
@@ -454,30 +524,67 @@ class Dataset(object):
         Returns
         -------
         Dataset
-            The initialized instance of ``self``.
+            The initialized instance of ``self`` with ticker data loaded or fetched.
 
         """
 
-        if all_tickers_saved(self._save_path, self._symbols):
+        if all_tickers_data_saved(self._save_path, self._symbols):
             log.info(
-                f"found existing local files for {self.__class__.__name__}, "
-                "attempting local load..."
+                f"found existing local data files for {self.__class__.__name__}, "
+                "attempting local load of data files..."
             )
 
             try:
-                self.load_local_files()
+                self.load_local_data_files()
                 log.info("OK!")
                 return self
 
             except DirectoryNotFoundError:
-                log.warning("failed to load local files, will attempt new fetch...")
+                log.warning("failed to load local data files, attempting new fetch...")
 
-        self._fetch_tickers(period, cols)
+        self._fetch_tickers_data(period, cols)
 
         if self._save:
-            setup_finq_save_path(self._save_path)
-            self._save_info_and_data()
+            setup_finq_save_data_path(self._save_path)
+            self._save_tickers_data()
 
+        return self
+
+    def fetch_info(
+        self,
+    ) -> Dataset:
+        """ """
+
+        if all_tickers_info_saved(self._save_path, self._symbols):
+            log.info(
+                f"found existing local info files for {self.__class__.__name__}, "
+                "attempting local load of info files..."
+            )
+
+            try:
+                self.load_local_info_files()
+                log.info("OK!")
+                return self
+
+            except DirectoryNotFoundError:
+                log.warning("failed to load local info files, attempting new fetch...")
+
+        self._fetch_tickers_info()
+
+        if self._save:
+            setup_finq_save_info_path(self._save_path)
+
+        return self
+
+    def fetch_data_and_info(
+        self,
+        period: str,
+        *,
+        cols: List[str] = ["Open", "High", "Low", "Close"],
+    ) -> Dataset:
+        """ """
+        self = self.fetch_data(period, cols=cols)
+        self = self.fetch_info()
         return self
 
     def fix_missing_data(
@@ -519,10 +626,11 @@ class Dataset(object):
 
             if diff:
                 n_missing_data += 1
-                df_missed = pd.DataFrame({"Date": list(diff)})
 
-                df_fixed = pd.concat((df, df_missed), axis=0)
-                df_fixed = df_fixed.sort_values("Date", ascending=True).reset_index()
+                df_missed = pd.DataFrame(index=list(diff))
+                df_missed.index.name = "Date"
+
+                df_fixed = pd.concat((df, df_missed)).sort_index(inplace=False)
                 df_fixed[cols] = df_fixed[cols].interpolate()
 
                 if df_fixed[df_fixed.isnull().any(axis=1)].index.values.size:
@@ -537,7 +645,7 @@ class Dataset(object):
             log.info(f"fixed {n_missing_data} tickers with missing data")
             if self._save:
                 log.info(f"saving fixed data to {self._save_path}...")
-                self._save_info_and_data()
+                self._save_tickers_data()
 
         log.info("OK!")
         return self
@@ -595,20 +703,34 @@ class Dataset(object):
         """
         return self.fetch_data(period).fix_missing_data().verify_data()
 
+    def visualize_ticker(
+        self,
+        ticker: str,
+        **kwargs: Dict[str, Any],
+    ):
+        """ """
+
+        if kwargs.get("title", None) is None:
+            kwargs["title"] = f"{ticker} historical OHLC prices [{self._market}]"
+
+        mpf.plot(
+            self._data[ticker],
+            **kwargs,
+        )
+
     def visualize(
         self,
         *,
         title: str = "Historical stock data",
         xlabel: str = "Dates",
         ylabel: str = "Closing price [$]",
-        ticks_rotation: int = 80,
+        ticks_rotation: int = 70,
         legend_loc: str = "best",
         log_scale: bool = False,
         save_path: Optional[str] = None,
         price_type: str = "Close",
         show: bool = True,
         block: bool = True,
-        data_transform: Optional[Callable] = None,
     ):
         """
         Plot the historical ticker price data over time.
@@ -622,7 +744,7 @@ class Dataset(object):
         ylabel : str
             The label to use for the y-axis.
         ticks_rotation : int
-            The amount of degrees to rotate the x-axis ticks with. Defaults to ``80``.
+            The amount of degrees to rotate the x-axis ticks with. Defaults to ``70``.
         legend_loc : str
             The location of the legend. Some possible values are (``best``, ``center``,
             ``upper left``, ``upper right``, ``lower left``, ``lower right``).
@@ -642,23 +764,12 @@ class Dataset(object):
             Whether to wait for all figures to be closed before returning. When ``False``
             the figure windows will be displayed and returned immediately. Defaults to
             ``True``.
-        data_transform : Callable | None
-            A function which transforms the data to be used for the plot. If parameter
-            ``log_scale=True`` then it takes the value ``np.log``. Defaults to ``None``.
 
         """
 
-        if data_transform is None:
-
-            def data_transform(d):
-                return d
-
-        if log_scale:
-            data_transform = np.log
-
         for ticker, data in self._data.items():
             plt.plot(
-                data_transform(data[price_type]),
+                np.log(data[price_type]) if log_scale else data[price_type],
                 label=ticker,
             )
 
@@ -747,8 +858,10 @@ class Dataset(object):
             A new ``pd.DataFrame`` with ticker names as columns.
 
         """
+
         return pd.DataFrame(
-            {t: d[price_type] for t, d in zip(self._symbols, self._data.values())}
+            {t: d[price_type] for t, d in zip(self._symbols, self._data.values())},
+            index=self._all_dates,
         )
 
     def as_numpy(

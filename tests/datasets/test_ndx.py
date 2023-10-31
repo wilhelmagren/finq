@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-16
-Last updated: 2023-10-22
+Last updated: 2023-10-31
 """
 
 import shutil
@@ -35,7 +35,7 @@ from finq.datautil import default_finq_save_path
 from finq import Asset
 
 
-class NDXTest(unittest.TestCase):
+class NDXTests(unittest.TestCase):
     """ """
 
     def setUp(self):
@@ -65,7 +65,8 @@ class NDXTest(unittest.TestCase):
         mock_ticker_data.return_value = df
 
         d = NDX(save=True)
-        d.run("1y")
+        d = d.fetch_data_and_info("3mo")
+        d.run("3mo")
 
         info_path = self._save_path / self._dataset_name / "info"
         data_path = self._save_path / self._dataset_name / "data"

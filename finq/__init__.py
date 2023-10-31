@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-10-21
+Last updated: 2023-10-28
 """
 
 from finq import datasets  # noqa

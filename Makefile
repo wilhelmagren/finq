@@ -8,8 +8,7 @@ install:
 
 .PHONY: test
 test:
-	clear
-	poetry run pytest tests
+	poetry run pytest tests -W ignore::DeprecationWarning
 
 .PHONY: build
 build:

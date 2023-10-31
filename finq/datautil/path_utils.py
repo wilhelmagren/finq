@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-21
-Last updated: 2023-10-21
+Last updated: 2023-10-31
 """
 
 import logging
@@ -65,7 +65,7 @@ def default_finq_save_path() -> Path:
     return Path.home() / ".finq" / "data"
 
 
-def all_tickers_saved(path: Union[Path, str], tickers: List[str]) -> bool:
+def all_tickers_saved(path: Union[Path, str], symbols: List[str]) -> bool:
     """
     Check whether or not all tickers have been saved locally.
 
@@ -73,7 +73,7 @@ def all_tickers_saved(path: Union[Path, str], tickers: List[str]) -> bool:
     ----------
     path : Path | str
         The local path to the potentially saved data for a ``Dataset``.
-    tickers : list
+    symbols : list
         The list of ticker symbols to try and find saved files for.
 
     Returns
@@ -83,26 +83,88 @@ def all_tickers_saved(path: Union[Path, str], tickers: List[str]) -> bool:
 
     """
 
+    return all(
+        (
+            all_tickers_data_saved(path, symbols),
+            all_tickers_info_saved(path, symbols),
+        )
+    )
+
+
+def all_tickers_data_saved(path: Union[Path, str], symbols: List[str]) -> bool:
+    """ """
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    data_path = path / "data"
+
+    if data_path.is_dir():
+        for ticker in symbols:
+            if not Path(data_path / f"{ticker}.csv").exists():
+                return False
+
+    if not data_path.is_dir():
+        return False
+
+    return True
+
+
+def all_tickers_info_saved(path: Union[Path, str], symbols: List[str]) -> bool:
+    """ """
+
     if isinstance(path, str):
         path = Path(path)
 
     info_path = path / "info"
-    data_path = path / "data"
 
     if info_path.is_dir():
-        for ticker in tickers:
+        for ticker in symbols:
             if not Path(info_path / f"{ticker}.json").exists():
                 return False
 
-    if data_path.is_dir():
-        for ticker in tickers:
-            if not Path(data_path / f"{ticker}.csv").exists():
-                return False
-
-    if (not info_path.is_dir()) or (not data_path.is_dir()):
+    if not info_path.is_dir():
         return False
 
     return True
+
+
+def setup_finq_save_data_path(
+    path: Union[Path, str],
+    create_parent: bool = True,
+):
+    """ """
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    if create_parent:
+        path.mkdir(parents=True, exist_ok=True)
+
+    data_path = path / "data"
+
+    log.info(f"creating path {data_path}...")
+    data_path.mkdir(parents=False, exist_ok=True)
+    log.info("OK!")
+
+
+def setup_finq_save_info_path(
+    path: Union[Path, str],
+    create_parent: bool = True,
+):
+    """ """
+
+    if isinstance(path, str):
+        path = Path(path)
+
+    if create_parent:
+        path.mkdir(parents=True, exist_ok=True)
+
+    info_path = path / "info"
+
+    log.info(f"creating path {info_path}...")
+    info_path.mkdir(parents=False, exist_ok=True)
+    log.info("OK!")
 
 
 def setup_finq_save_path(path: Union[Path, str]) -> Optional[NotADirectoryError]:
@@ -124,7 +186,6 @@ def setup_finq_save_path(path: Union[Path, str]) -> Optional[NotADirectoryError]
     if isinstance(path, str):
         path = Path(path)
 
-    log.info(f"setting up {path} for data saving...")
     if path.exists():
         if not path.is_dir():
             raise NotADirectoryError(
@@ -138,13 +199,5 @@ def setup_finq_save_path(path: Union[Path, str]) -> Optional[NotADirectoryError]
     path.mkdir(parents=True, exist_ok=True)
     log.info("OK!")
 
-    info_path = path / "info"
-    data_path = path / "data"
-
-    log.info(f"creating path {info_path}...")
-    info_path.mkdir(parents=False, exist_ok=True)
-    log.info("OK!")
-
-    log.info(f"creating path {data_path}...")
-    data_path.mkdir(parents=False, exist_ok=True)
-    log.info("OK!")
+    setup_finq_save_data_path(path, create_parent=False)
+    setup_finq_save_info_path(path, create_parent=False)
