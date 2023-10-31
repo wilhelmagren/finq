@@ -382,10 +382,7 @@ class Dataset(object):
         self._dates = dates
         self._all_dates = all_dates
 
-    def _fetch_tickers_info(
-        self,
-        period: str,
-    ):
+    def _fetch_tickers_info(self):
         """ """
 
         info = {}
@@ -419,7 +416,7 @@ class Dataset(object):
         """
 
         self._fetch_tickers_data(period, cols)
-        self._fetch_tickers_info(period)
+        self._fetch_tickers_info()
 
     def load_local_data_files(self) -> Optional[DirectoryNotFoundError]:
         """ """
@@ -551,7 +548,6 @@ class Dataset(object):
 
     def fetch_info(
         self,
-        period: str,
     ) -> Dataset:
         """ """
 
@@ -569,7 +565,7 @@ class Dataset(object):
             except DirectoryNotFoundError:
                 log.warning("failed to load local info files, attempting new fetch...")
 
-        self._fetch_tickers_info(period)
+        self._fetch_tickers_info()
 
         if self._save:
             setup_finq_save_info_path(self._save_path)
@@ -584,7 +580,7 @@ class Dataset(object):
     ) -> Dataset:
         """ """
         self = self.fetch_data(period, cols=cols)
-        self = self.fetch_info(period)
+        self = self.fetch_info()
         return self
 
     def fix_missing_data(
