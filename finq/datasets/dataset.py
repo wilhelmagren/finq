@@ -41,12 +41,10 @@ from finq.exceptions import (
 from finq.asset import Asset
 from finq.datautil import (
     CachedRateLimiter,
-    all_tickers_saved,
     all_tickers_data_saved,
     all_tickers_info_saved,
     default_finq_cache_path,
     default_finq_save_path,
-    setup_finq_save_path,
     setup_finq_save_data_path,
     setup_finq_save_info_path,
     fetch_names_and_symbols,
@@ -287,7 +285,7 @@ class Dataset(object):
         """
         with open(path, "r") as f:
             return json.load(f)
-    
+
     @staticmethod
     def _extract_dates_from_data(data: pd.DataFrame) -> Tuple[List, Dict]:
         """
@@ -539,7 +537,7 @@ class Dataset(object):
                 self.load_local_data_files()
                 log.info("OK!")
                 return self
-            
+
             except DirectoryNotFoundError:
                 log.warning("failed to load local data files, attempting new fetch...")
 
@@ -550,7 +548,7 @@ class Dataset(object):
             self._save_tickers_data()
 
         return self
-    
+
     def fetch_info(
         self,
         period: str,
@@ -567,7 +565,7 @@ class Dataset(object):
                 self.load_local_info_files()
                 log.info("OK!")
                 return self
-            
+
             except DirectoryNotFoundError:
                 log.warning("failed to load local info files, attempting new fetch...")
 
@@ -577,7 +575,7 @@ class Dataset(object):
             setup_finq_save_info_path(self._save_path)
 
         return self
-    
+
     def fetch_data_and_info(
         self,
         period: str,
@@ -588,7 +586,7 @@ class Dataset(object):
         self = self.fetch_data(period, cols=cols)
         self = self.fetch_info(period)
         return self
-    
+
     def fix_missing_data(
         self,
         *,
