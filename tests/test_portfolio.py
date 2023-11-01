@@ -28,17 +28,42 @@ Last updated: 2023-11-01
 import unittest
 import numpy as np
 import pandas as pd
+from unittest.mock import patch
 
 from finq import Portfolio
 from finq.datasets import CustomDataset
+
+from .datasets.mock_df import _random_df
 
 
 class PortfolioTests(unittest.TestCase):
     """ """
 
-    def test_constructor_dataset(self):
+    @patch("yfinance.Ticker.history")
+    def test_constructor_dataset(self, mock_ticker_data):
         """ """
 
-        pass
+        df = _random_df(["Open", "High", "Low", "Close"], days=400)
+        mock_ticker_data.return_value = df
 
+        names = ["dummy", "stuff", "kebab", "pizza"]
+        symbols = ["dummy.ST", "stuff.ST", "kebab.ST", "pizza.ST"]
+
+        d = CustomDataset(
+            names,
+            symbols,
+            market="OMX",
+            save=False,
+        )
+
+        d = d.run("2y")
+
+        p = Portfolio(
+            d,
+            confidence_level=0.90,
+            risk_free_rate=1e-4,
+            n_trading_days=240,
+        )
+
+        self.assertTrue(isinstance(p._data, np.ndarray))
 
