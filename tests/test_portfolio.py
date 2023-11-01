@@ -21,40 +21,49 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
+File created: 2023-11-01
 Last updated: 2023-11-01
 """
 
+import unittest
+import numpy as np
+import pandas as pd
+from unittest.mock import patch
 
-class FinqError(Exception):
+from finq import Portfolio
+from finq.datasets import CustomDataset
+
+from .datasets.mock_df import _random_df
+
+
+class PortfolioTests(unittest.TestCase):
     """ """
 
+    @patch("yfinance.Ticker.history")
+    def test_constructor_dataset(self, mock_ticker_data):
+        """ """
 
-class DirectoryNotFoundError(FinqError):
-    """ """
+        df = _random_df(["Open", "High", "Low", "Close"], days=400)
+        mock_ticker_data.return_value = df
 
-    pass
+        names = ["dummy", "stuff", "kebab", "pizza"]
+        symbols = ["dummy.ST", "stuff.ST", "kebab.ST", "pizza.ST"]
 
+        d = CustomDataset(
+            names,
+            symbols,
+            market="OMX",
+            save=False,
+        )
 
-class InvalidCombinationOfArgumentsError(FinqError):
-    """ """
+        d = d.run("2y")
 
-    pass
+        p = Portfolio(
+            d,
+            confidence_level=0.90,
+            risk_free_rate=1e-4,
+            n_trading_days=240,
+        )
 
+        self.assertTrue(isinstance(p._data, np.ndarray))
 
-class InvalidPortfolioWeightsError(FinqError):
-    """ """
-
-    pass
-
-
-class NoFeasibleSolutionError(FinqError):
-    """ """
-
-    pass
-
-
-class PortfolioNotYetOptimizedError(FinqError):
-    """ """
-
-    pass

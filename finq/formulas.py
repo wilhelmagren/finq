@@ -21,40 +21,57 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-File created: 2023-10-09
+File created: 2023-11-01
 Last updated: 2023-11-01
 """
 
+import numpy as np
+from typing import Union
 
-class FinqError(Exception):
+
+def k_moment(x: np.ndarray, k: int) -> float:
     """ """
 
+    return ((x - x.mean()) ** k).sum() / x.shape[0]
 
-class DirectoryNotFoundError(FinqError):
+
+def adjusted_fisher_pearson_skewness_coefficient(
+    x: np.ndarray,
+) -> float:
     """ """
 
-    pass
+    n = x.shape[0]
+    coeff = np.sqrt(n * (n - 1)) / (n - 2)
+
+    m2 = k_moment(x, 2)
+    m3 = k_moment(x, 3)
+
+    return coeff * (m3 / (m2 ** (3 / 2)))
 
 
-class InvalidCombinationOfArgumentsError(FinqError):
+def period_returns(x: np.ndarray, period: int = 1) -> np.ndarray:
     """ """
 
-    pass
+    return (x[:, period:] / x[:, :-period]) - 1
 
 
-class InvalidPortfolioWeightsError(FinqError):
+def sharpe_ratio(
+    r: Union[float, np.ndarray],
+    v: Union[float, np.ndarray],
+    rfr: float,
+) -> Union[float, np.ndarray]:
     """ """
 
-    pass
+    return (r - rfr) / v
 
 
-class NoFeasibleSolutionError(FinqError):
+def weighted_returns(w: np.ndarray, x: np.ndarray) -> np.ndarray:
     """ """
 
-    pass
+    return np.dot(w, x)
 
 
-class PortfolioNotYetOptimizedError(FinqError):
+def weighted_variance(w: np.ndarray, cov: np.ndarray) -> np.ndarray:
     """ """
 
-    pass
+    return np.dot(w.T, np.dot(cov, w))

@@ -7,11 +7,11 @@ from datetime import (
 from typing import List
 
 
-def _random_df(cols: List[str]) -> pd.DataFrame:
-    """Randomize some some for 30 days with given columns."""
+def _random_df(cols: List[str], days: int = 30) -> pd.DataFrame:
+    """ Randomize some data for x days with given columns. """
 
     date_today = datetime.now()
-    days = pd.date_range(date_today, date_today + timedelta(30), freq="D")
+    days = pd.date_range(date_today, date_today + timedelta(days), freq="D")
 
     data = np.random.normal(500, 10, size=(len(days), len(cols)))
     df = pd.DataFrame(data, columns=cols, index=days)

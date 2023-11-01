@@ -22,21 +22,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-20
-Last updated: 2023-10-29
+Last updated: 2023-11-01
 """
 
 import logging
 import pandas as pd
 import numpy as np
+from functools import wraps
 
 from finq.asset import Asset
+from finq.datasets import Dataset
 from finq.exceptions import (
+    FinqError,
     InvalidCombinationOfArgumentsError,
+    InvalidPortfolioWeightsError,
     PortfolioNotYetOptimizedError,
+)
+from finq.formulas import (
+    period_returns,
+    sharpe_ratio,
+    weighted_returns,
+    weighted_variance,
 )
 
 from typing import (
     Any,
+    Callable,
     List,
     Dict,
     Union,
@@ -51,7 +62,7 @@ class Portfolio(object):
 
     def __init__(
         self,
-        data: Union[List[Asset], np.ndarray, pd.DataFrame],
+        data: Union[Dataset, List[Asset], np.ndarray, pd.DataFrame],
         *,
         weights: Optional[np.ndarray] = None,
         names: Optional[Union[Dict[str, str], List[str]]] = None,
@@ -61,6 +72,11 @@ class Portfolio(object):
         n_trading_days: int = 252,
     ):
         """ """
+
+        if isinstance(data, Dataset):
+            assets = data.as_assets()
+            data = list(assets.values())
+            symbols = list(assets.keys())
 
         if not isinstance(data, list):
             if names is None and symbols is None and not isinstance(data, pd.DataFrame):
@@ -97,89 +113,110 @@ class Portfolio(object):
         self._risk_free_rate = risk_free_rate
         self._n_trading_days = n_trading_days
 
-        self._div_fn = np.vectorize(self._divide)
-
-    @staticmethod
-    def _divide(u: np.ndarray, v: np.ndarray) -> Union[ZeroDivisionError, np.ndarray]:
+    def weights_are_normalized(self) -> bool:
         """ """
-        if v == 0:
-            if u == 0:
-                return np.ones(u.shape).astype(u.dtype)
-            raise ZeroDivisionError(
-                f"Tried to perform the following division: {u}/{v}.",
-            )
 
-        return u / v
+        return self._weights.sum() == 1.0
 
-    def assets_period_returns(self, period: int = 1) -> np.ndarray:
+    def check_valid_weights(func) -> Callable:
         """ """
-        return (
-            self._div_fn(
-                self._data[:, 1::period],
-                self._data[:, :-1:period],
-            )
-            - 1
+
+        @wraps(func)
+        def _check_weights(self, *args, **kwargs) -> Optional[FinqError]:
+            """ """
+
+            if self._weights is None:
+                raise PortfolioNotYetOptimizedError(
+                    "Portfolio weights are `None`. Perhaps you have not yet optimized it? "
+                )
+
+            if not self.weights_are_normalized():
+                raise InvalidPortfolioWeightsError(
+                    "Your portfolio weights are not normalized. Make sure to normalize them "
+                    "(they sum to one) before calculating any analytical quantities. "
+                )
+
+            return func(*args, **kwargs)
+
+        return _check_weights
+
+    def daily_returns(self) -> np.ndarray:
+        """ """
+
+        return period_returns(self._data, period=1)
+
+    def yearly_returns(self) -> np.ndarray:
+        """ """
+
+        return period_returns(self._data, period=self._n_trading_days)
+
+    def period_returns(self, period: int) -> np.ndarray:
+        """ """
+
+        return period_returns(self._data, period=period)
+
+    def daily_returns_mean(self) -> float:
+        """ """
+
+        return np.mean(period_returns(self._data, period=1), axis=1)
+
+    def yearly_returns_mean(self) -> float:
+        """ """
+
+        return np.mean(period_returns(self._data, period=self._n_trading_days), axis=1)
+
+    def period_returns_mean(self, period: int) -> float:
+        """ """
+
+        return np.mean(period_returns(self._data, period=period), axis=1)
+
+    def daily_covariance(self) -> np.ndarray:
+        """ """
+
+        return np.cov(period_returns(self._data, period=1), rowvar=True)
+
+    def yearly_covariance(self) -> np.ndarray:
+        """ """
+
+        return np.cov(
+            period_returns(self._data, period=self._n_trading_days), rowvar=True
         )
 
-    def assets_period_returns_mean(self, period: int = 1) -> np.ndarray:
+    def period_covariance(self, period: int) -> np.ndarray:
         """ """
-        return np.mean(self.assets_period_returns(period=period), axis=1)
 
-    def assets_period_returns_cov(self, period: int = 1) -> np.ndarray:
-        """ """
-        return np.cov(self.assets_period_returns(period=period), rowvar=True)
+        return np.cov(period_returns(self._data, period=period), rowvar=True)
 
-    def assets_volatility(self, period: int = 1) -> np.ndarray:
+    @check_valid_weights
+    def volatility(self) -> float:
         """ """
-        return np.std(
-            self.assets_period_returns(period=period),
-            axis=1,
+
+        return np.sqrt(
+            weighted_variance(
+                self._weights,
+                self.daily_covariance(),
+            )
         ) * np.sqrt(self._n_trading_days)
 
-    def period_returns(self, period: int = 1) -> np.ndarray:
+    @check_valid_weights
+    def expected_returns(self) -> float:
         """ """
 
-        if self._weights is None:
-            raise PortfolioNotYetOptimizedError(
-                "No portfolio weights available to calculate period returns with."
-            )
-
-        return np.dot(self._weights.T, self.assets_period_returns(period=period))
-
-    def period_returns_mean(self, period: int = 1) -> np.ndarray:
-        """ """
-
-        if self._weights is None:
-            raise PortfolioNotYetOptimizedError(
-                "No portfolio weights available to calculate period returns mean with."
-            )
-
-        return np.dot(self._weights.T, self.assets_period_returns_mean(period=period))
-
-    def volatility(
-        self, *, period: int = 1, n_trading_days: Optional[int] = None
-    ) -> float:
-        """ """
-
-        if self._weights is None:
-            raise PortfolioNotYetOptimizedError(
-                "No portfolio weights available to calculate volatility with."
-            )
-
-        if n_trading_days is None:
-            n_trading_days = self._n_trading_days
-
-        std = np.sqrt(
-            np.dot(
-                self._weights.T,
-                np.dot(
-                    self.assets_period_returns_cov(period=period),
-                    self._weights,
-                ),
-            )
+        return np.mean(
+            weighted_returns(
+                self._weights,
+                self.daily_returns_mean() * self._n_trading_days,
+            ),
+            axis=1,
         )
 
-        return std * np.sqrt(n_trading_days)
+    @check_valid_weights
+    def sharpe_ratio(self) -> float:
+        """ """
+
+        r = self.expected_returns()
+        v = self.volatility()
+        return sharpe_ratio(r, v, self._risk_free_rate)
 
     @property
     def weights(self) -> Optional[np.ndarray]:
@@ -187,7 +224,7 @@ class Portfolio(object):
         return self._weights
 
     @weights.setter
-    def weights(self, weights: Union[List[float], np.ndarray]):
+    def weights(self, weights: np.ndarray):
         """ """
         self._weights = weights
 

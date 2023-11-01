@@ -39,8 +39,24 @@ pip install pyfinq
 ```
 
 ## 🚀 Example usage
-The standard way to define a custom dataset is to provide a list of security names and
-their related ticker symbols,
+*finq* supports a large number of major world indices which can be used through their respective `Dataset` implementation. To download all ticker OHLC data for a period and saving it locally for the `OMXS30` index, you can do the following:
+```python
+from finq.datasets import OMXS30
+
+dataset = OMXS30(save=True)
+dataset.run("2y")
+
+```
+
+The `.run(period)` function is a convenient wrapper for three other functions. The alternative way would be by running:
+```python
+dataset.fetch_data("2y").fix_missing_data().verify_data()
+```
+
+and for a full list of all implemented indices, please take a look at the following [link](https://github.com/wilhelmagren/finq/blob/ade0e4ca064b08190131d013d6230c4d74be4986/finq/datasets/__init__.py).
+
+You can also define custom datasets, which may not be an already available major world index. To do that you need to use the `CustomDataset` and provide both a list of security names and their ticker symbols
+which are to be included in your dataset. Furthermore, you need to specify what market the ticker symbols are available on, e.g., `NASDAQ` or `OMX`. In code it can look like this:
 
 ```python
 from finq.datasets import CustomDataset
@@ -48,27 +64,58 @@ from finq.datasets import CustomDataset
 names = ["Alfa Laval", "Boliden", "SEB A", "Sv. Handelsbanken A"]
 symbols = ["ALFA.ST", "BOL.ST", "SEB-A.ST", "SHB-A.ST"]
 
-dataset = CustomDataset(names, symbols, market="OMX", save=True)
-dataset.fetch_data("3y") \
-    .fix_missing_data() \
-    .verify_data()
-
-dataset.visualize(log_scale=True)
+dataset = CustomDataset(names, symbols, market="OMX", save=False)
+dataset = dataset.run("6mo")
 ...
+
 ```
 
-or if you don't know the syntax of the ticker symbols that you want, you can pass in a
-valid NASDAQ index name and try and fetch its related ticker components. We can also
-call the function `.run(period)` which performs the three steps the above cell does
-(fetching, fixing, and verifying).
+The `Dataset` class supports visualizing any OHLC historical data for all considered tickers. Calling the `.visualize(price_type="Close")` function on the OMXS30 index would yield the following plot:
+<details>
+<summary>Show dataset plot</summary>
+    
+![OMXS30 Visualization 6 months](./docs/images/OMXS30_visualization.png)
+    
+</details>
+
+and the majority of labels and styles for the plot can be customized regularly with [matplotlib](https://matplotlib.org/) styling. You can also choose to visualize more advanced plots, but only for individual assets,
+through the [mplfinance](https://github.com/matplotlib/mplfinance) library. The below image is a `candle` plot of the **BOL.ST** ticker from the **OMXS30** index, with three moving averages.
+
+<details>
+    <summary>Show ticker plot</summary>
+
+![BOL.ST Candle plot](./docs/images/OMXS30_BOL_visualization.png)
+    
+</details>
+
+---
+You can create a `Portfolio` in a large number of ways. The most convenient way is to first initialize a `Dataset` like above, and then pass that dataset to the portfolio class constructor. The class also supports passing in
+a list of `Asset` objects, or a `np.ndarray`, or a `pd.DataFrame`. But for the latter three alternatives you need to also provide the security names and ticker symbols from which the data came from.
+All different methods are showed in the snipper below:
+
 ```python
-from finq.datasets import CustomDataset
+dataset = ...
+assets = ...
+np_arr = ...
+pd_df = ...
 
-dataset = CustomDataset(index_name='NDX', market="NASDAQ", save=False)
-dataset.run("1y")
+from finq import Portfolio
 
-closing_prices = dataset.as_numpy("Close")
-...
+# All four alternatives are equally viable.
+# The latter three are implemented for whenever
+# you preferably only want to work with local data.
+p_from_dataset = Portfolio(dataset)
+p_from_assets = Portfolio(assets, names=["SEB-A.ST", ...], symbols=...)
+p_from_numpy = Portfolio(np_arr, names=["SEB-A.ST", ...], symbols=...)
+p_from_pandas = Portfolio(pd_df, names=["SEB-A.ST", ...], symbols=...)
+
+```
+
+**WIP** to optimize your portfolio against some objective function, you use the `optimize(...)` function.
+
+```python
+portfolio.optimize("sharpe")
+
 ```
 
 ## 📋 License
