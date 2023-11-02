@@ -55,6 +55,7 @@ openpyxl = "^3.1.2"
 numpy = "^1.26.0"
 matplotlib = "^3.8.0"
 mplfinance = "^0.12.10b0"
+scipy = "^1.11.3"
 
 [tool.poetry.group.dev]
 optional = true
