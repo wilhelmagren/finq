@@ -837,6 +837,7 @@ class Dataset(object):
                 market=self._market,
                 index_name=self._index_name,
                 price_type=price_type,
+                pre_compute=False,
             )
             for i, ticker in enumerate(self._symbols)
         }
