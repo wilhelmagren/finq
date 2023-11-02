@@ -27,7 +27,6 @@ Last updated: 2023-11-01
 
 import unittest
 import numpy as np
-import pandas as pd
 from unittest.mock import patch
 
 from finq import Portfolio
@@ -66,4 +65,3 @@ class PortfolioTests(unittest.TestCase):
         )
 
         self.assertTrue(isinstance(p._data, np.ndarray))
-

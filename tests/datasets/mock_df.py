@@ -8,7 +8,7 @@ from typing import List
 
 
 def _random_df(cols: List[str], days: int = 30) -> pd.DataFrame:
-    """ Randomize some data for x days with given columns. """
+    """Randomize some data for x days with given columns."""
 
     date_today = datetime.now()
     days = pd.date_range(date_today, date_today + timedelta(days), freq="D")
