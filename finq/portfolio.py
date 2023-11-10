@@ -43,9 +43,6 @@ from finq.exceptions import (
     PortfolioNotYetOptimizedError,
 )
 from finq.formulas import (
-    constraint_weights_all_positive,
-    constraint_weights_are_normalized,
-    mean_variance,
     period_returns,
     sharpe_ratio,
     weighted_returns,
@@ -339,7 +336,7 @@ class Portfolio(object):
         r = self.expected_returns()
         v = self.volatility()
         return sharpe_ratio(r, v, self._risk_free_rate)
-    
+
     def verify_can_optimize(self) -> Optional[FinqError]:
         """ """
 
@@ -431,7 +428,7 @@ class Portfolio(object):
         ax.scatter(
             variance,
             expected_returns,
-            color="orangered",
+            color="lime",
             marker="x",
             s=50,
             alpha=0.9,
@@ -441,7 +438,7 @@ class Portfolio(object):
         ax.scatter(
             random_variance[np.argmax(random_sharpe_ratio)],
             random_returns[np.argmax(random_sharpe_ratio)],
-            c="lime",
+            c="red",
             marker="d",
             s=40,
             alpha=0.9,
