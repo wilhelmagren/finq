@@ -94,29 +94,65 @@ a list of `Asset` objects, or a `np.ndarray`, or a `pd.DataFrame`. But for the l
 All different methods are showed in the snipper below:
 
 ```python
-dataset = ...
-assets = ...
-np_arr = ...
-pd_df = ...
-
 from finq import Portfolio
 
 # All four alternatives are equally viable.
 # The latter three are implemented for whenever
 # you preferably only want to work with local data.
-p_from_dataset = Portfolio(dataset)
-p_from_assets = Portfolio(assets, names=["SEB-A.ST", ...], symbols=...)
-p_from_numpy = Portfolio(np_arr, names=["SEB-A.ST", ...], symbols=...)
-p_from_pandas = Portfolio(pd_df, names=["SEB-A.ST", ...], symbols=...)
+from_dataset = Portfolio(dataset)
+from_assets = Portfolio(assets, names=["SEB-A.ST", ...], symbols=...)
+from_numpy = Portfolio(np_arr, names=["SEB-A.ST", ...], symbols=...)
+from_pandas = Portfolio(pd_df, names=["SEB-A.ST", ...], symbols=...)
+...
 
 ```
 
-**WIP** to optimize your portfolio against some objective function, you use the `optimize(...)` function.
+To optimize your portfolio against some objective function, you use the `optimize(...)` function. Optimizing the mean variance expression (maximizing sharpe ratio) requires you to specify the 
+objective function that you want to *minimize*, the initial weights of your portfolio, optionally the bounds and constraints of the portfolio weights. You can do it in the following way:
 
 ```python
-portfolio.optimize("sharpe")
+from finq import Portfolio
+from finq.datasets import OMXS30
+from finq.formulas import mean_variance
 
+dataset = OMXS30(save=True)
+dataset = dataset.run("2y")
+
+portfolio = Portfolio(dataset)
+portfolio.initialize_random_weights(
+    "lognormal",
+    size=(len(dataset), 1),
+)
+
+risk_tolerance = 1
+
+portfolio.set_objective_function(
+    mean_variance,
+    risk_tolerance * portfolio.daily_covariance(),
+    portfolio.daily_returns_mean(),
+)
+
+portfolio.set_objective_bounds(
+    [(0, 0.2) for _ in range(len(dataset))],
+)
+
+portfolio.optimize(
+    method="COBYLA",
+    options={"maxiter": 1000},
+)
+
+portfolio.plot_mean_variance(n_samples=10000, figsize=(8, 5))
 ```
+
+The above code is directly taken from one of the scripts available in the [examples](./examples) directory in this repo. Running it can yield the following comparative plot of the sharpe ratios for: your *optimized* portfolio weights,
+and randomly sampled portfolio weights.
+
+<details>
+    <summary>Show sharpe ratio plot</summary>
+
+![OMXS30 sharpe ratio plot](./docs/images/OMXS30_sharpe-ratio_COBYLA.png)
+    
+</details>
 
 ## 📋 License
 All code is to be held under a general MIT license, please see [LICENSE](https://github.com/wilhelmagren/finq/blob/main/LICENSE) for specific information.
