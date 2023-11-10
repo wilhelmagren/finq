@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-20
-Last updated: 2023-11-02
+Last updated: 2023-11-10
 """
 
 import logging
@@ -330,7 +330,11 @@ class Portfolio(object):
         """ """
 
         if not callable(method) and method not in self._supported_optimization_methods:
-            raise ValueError("")
+            raise ValueError(
+                "The optimization method you provided is not supported. It has to either "
+                f"be one of `({'.'.join(self._supported_optimization_methods.keys())})` or "
+                f"a callable optimizer function. You provided: {method}."
+            )
 
         if self._objective_function is None:
             self.set_objective_function(
