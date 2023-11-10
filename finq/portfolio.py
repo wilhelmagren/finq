@@ -39,6 +39,7 @@ from finq.exceptions import (
     FinqError,
     InvalidCombinationOfArgumentsError,
     InvalidPortfolioWeightsError,
+    ObjectiveFunctionError,
     PortfolioNotYetOptimizedError,
 )
 from finq.formulas import (
@@ -103,8 +104,9 @@ class Portfolio(object):
         risk_free_rate: float = 5e-3,
         n_trading_days: int = 252,
         objective_function: Optional[Callable] = None,
-        objective_function_args: Optional[Tuple[Any, ...]] = None,
-        objective_constraints: Optional[List[Dict]] = None,
+        objective_function_args: Tuple[Any, ...] = (),
+        objective_bounds: Optional[List[Tuple[int, ...]]] = None,
+        objective_constraints: Optional[Tuple[Dict, ...]] = None,
     ):
         """ """
 
@@ -151,6 +153,7 @@ class Portfolio(object):
         self._random_portfolios = None
         self._objective_function = objective_function
         self._objective_function_args = objective_function_args
+        self._objective_bounds = objective_bounds
         self._objective_constraints = objective_constraints
 
     def weights_are_normalized(self) -> bool:
@@ -262,6 +265,17 @@ class Portfolio(object):
 
         self._objective_constraints = [{"type": t, "fun": c} for (t, c) in constraints]
 
+    def set_objective_bounds(
+        self,
+        bounds: Union[Tuple[int, ...], List[Tuple[int, ...]]],
+    ):
+        """ """
+
+        if isinstance(bounds, tuple):
+            bounds = [bounds for _ in range(self._data.shape[0])]
+
+        self._objective_bounds = bounds
+
     def sample_random_portfolios(
         self,
         n_samples: int,
@@ -284,7 +298,7 @@ class Portfolio(object):
             if i % 10:
                 bar.set_description(
                     f"Sampling random portfolio {i + 1} from "
-                    f"{distribution} distribution"
+                    f"{distribution.__name__} distribution"
                 )
 
             portfolio = distribution(**kwargs)
@@ -325,41 +339,34 @@ class Portfolio(object):
         r = self.expected_returns()
         v = self.volatility()
         return sharpe_ratio(r, v, self._risk_free_rate)
+    
+    def verify_can_optimize(self) -> Optional[FinqError]:
+        """ """
 
-    def optimize(self, method: str, **kwargs: Dict[str, Any]):
+        if self._objective_function is None:
+            raise ObjectiveFunctionError
+
+        if self._weights is None:
+            raise InvalidPortfolioWeightsError
+
+    def optimize(self, *, method: str = "COBYLA", **kwargs: Dict[str, Any]):
         """ """
 
         if not callable(method) and method not in self._supported_optimization_methods:
             raise ValueError(
                 "The optimization method you provided is not supported. It has to either "
                 f"be one of `({'.'.join(self._supported_optimization_methods.keys())})` or "
-                f"a callable optimizer function. You provided: {method}."
+                f"a callable optimization function. You provided: {method}."
             )
 
-        if self._objective_function is None:
-            self.set_objective_function(
-                mean_variance,
-                self.daily_covariance(),
-                self.daily_returns_mean(),
-            )
-
-        if self._weights is None:
-            self.initialize_random_weights(
-                "uniform",
-                size=(self._data.shape[0], 1),
-            )
-
-        if self._objective_constraints is None:
-            self.set_objective_constraints(
-                ("eq", constraint_weights_are_normalized),
-                ("eq", constraint_weights_all_positive),
-            )
+        self.verify_can_optimize()
 
         result = scipyopt.minimize(
             self._objective_function,
-            self._weights[:, 0],
+            self._weights.reshape(-1),
             self._objective_function_args,
             method=method,
+            bounds=self._objective_bounds,
             constraints=self._objective_constraints,
             **kwargs,
         )
@@ -370,19 +377,23 @@ class Portfolio(object):
     def plot_mean_variance(
         self,
         *,
-        figsize=(12, 7),
+        n_samples: int = 1000,
+        figsize: Tuple[int, int] = (12, 7),
+        title: str = "Mean variance optimization",
+        xlabel: str = "Volatility",
+        ylabel: str = "Period returns mean",
     ):
         """ """
 
         if self._weights is None:
             self.initialize_random_weights(
-                "uniform",
+                "lognormal",
                 size=(self._data.shape[0], 1),
             )
 
         if self._random_portfolios is None:
             self.sample_random_portfolios(
-                1000,
+                n_samples,
                 size=self._weights.shape,
             )
 
@@ -400,24 +411,49 @@ class Portfolio(object):
             self.daily_returns_mean(),
         )
 
-        ax.scatter(
+        random_sharpe_ratio = random_returns / random_variance
+
+        expected_returns = self.expected_returns()
+        variance = self.variance()
+
+        portfolio_sharpe_ratio = expected_returns / variance
+
+        colorbar = ax.scatter(
             random_variance,
             random_returns,
-            c=random_variance,
+            c=random_sharpe_ratio,
             marker=".",
             cmap="plasma",
             label="Random portfolios",
+            alpha=0.7,
         )
 
         ax.scatter(
-            self.variance(),
-            self.expected_returns(),
-            color="red",
-            marker="D",
-            label="Optimal portfolio",
+            variance,
+            expected_returns,
+            color="orangered",
+            marker="x",
+            s=50,
+            alpha=0.9,
+            label=f"Optimal, {portfolio_sharpe_ratio.item():.1f} sharpe ratio",
         )
 
+        ax.scatter(
+            random_variance[np.argmax(random_sharpe_ratio)],
+            random_returns[np.argmax(random_sharpe_ratio)],
+            c="lime",
+            marker="d",
+            s=40,
+            alpha=0.9,
+            label=f"Best random, {random_sharpe_ratio.max():.1f} sharpe ratio",
+        )
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+
         fig.legend()
+        plt.colorbar(colorbar, label="Sharpe ratio")
         plt.show()
 
     @property
