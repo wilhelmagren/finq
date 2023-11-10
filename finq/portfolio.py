@@ -22,13 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-20
-Last updated: 2023-11-01
+Last updated: 2023-11-10
 """
 
 import logging
 import pandas as pd
 import numpy as np
+import scipy.optimize as scipyopt
+import matplotlib.pyplot as plt
 from functools import wraps
+from tqdm import tqdm
 
 from finq.asset import Asset
 from finq.datasets import Dataset
@@ -36,6 +39,7 @@ from finq.exceptions import (
     FinqError,
     InvalidCombinationOfArgumentsError,
     InvalidPortfolioWeightsError,
+    ObjectiveFunctionError,
     PortfolioNotYetOptimizedError,
 )
 from finq.formulas import (
@@ -50,6 +54,7 @@ from typing import (
     Callable,
     List,
     Dict,
+    Tuple,
     Union,
     Optional,
 )
@@ -59,6 +64,31 @@ log = logging.getLogger(__name__)
 
 class Portfolio(object):
     """ """
+
+    # For a full list of `scipy` optimization methods and references, see the link below.
+    # https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html
+    _supported_optimization_methods = (
+        "Nelder-Mead",
+        "Powell",
+        "CG",
+        "BFGS",
+        "Newton-CG",
+        "L-BFGS-B",
+        "TNC",
+        "COBYLA",
+        "SLSQP",
+        "trust-constr",
+        "dogleg",
+        "trust-ncg",
+        "trust-exact",
+        "trust-krylov",
+    )
+
+    _weight_initializations = {
+        "lognormal": np.random.lognormal,
+        "normal": np.random.normal,
+        "uniform": np.random.uniform,
+    }
 
     def __init__(
         self,
@@ -70,6 +100,10 @@ class Portfolio(object):
         confidence_level: float = 0.95,
         risk_free_rate: float = 5e-3,
         n_trading_days: int = 252,
+        objective_function: Optional[Callable] = None,
+        objective_function_args: Tuple[Any, ...] = (),
+        objective_bounds: Optional[List[Tuple[int, ...]]] = None,
+        objective_constraints: Optional[Tuple[Dict, ...]] = None,
     ):
         """ """
 
@@ -113,16 +147,39 @@ class Portfolio(object):
         self._risk_free_rate = risk_free_rate
         self._n_trading_days = n_trading_days
 
+        self._random_portfolios = None
+        self._objective_function = objective_function
+        self._objective_function_args = objective_function_args
+        self._objective_bounds = objective_bounds
+        self._objective_constraints = objective_constraints
+
     def weights_are_normalized(self) -> bool:
         """ """
+        return np.allclose(self._weights.sum(), 1.0, rtol=1e-6)
 
-        return self._weights.sum() == 1.0
+    def initialize_random_weights(
+        self,
+        distribution: Union[str, Callable],
+        *args: Tuple[Any, ...],
+        **kwargs: Dict[str, Any],
+    ):
+        """ """
+
+        if isinstance(distribution, str):
+            distribution = self._weight_initializations.get(distribution, None)
+            if distribution is None:
+                raise ValueError(
+                    "You provided a non valid weight initialization distribution."
+                )
+
+        weights = distribution(*args, **kwargs)
+        self._weights = weights / weights.sum()
 
     def check_valid_weights(func) -> Callable:
         """ """
 
         @wraps(func)
-        def _check_weights(self, *args, **kwargs) -> Optional[FinqError]:
+        def _check_valid_weights(self, *args, **kwargs) -> Optional[FinqError]:
             """ """
 
             if self._weights is None:
@@ -136,9 +193,9 @@ class Portfolio(object):
                     "(they sum to one) before calculating any analytical quantities. "
                 )
 
-            return func(*args, **kwargs)
+            return func(self, *args, **kwargs)
 
-        return _check_weights
+        return _check_valid_weights
 
     def daily_returns(self) -> np.ndarray:
         """ """
@@ -187,28 +244,90 @@ class Portfolio(object):
 
         return np.cov(period_returns(self._data, period=period), rowvar=True)
 
+    def set_objective_function(
+        self,
+        function: Callable,
+        *args: Tuple[Any, ...],
+    ):
+        """ """
+
+        self._objective_function = function
+        self._objective_function_args = args
+
+    def set_objective_constraints(
+        self,
+        *constraints,
+    ):
+        """ """
+
+        self._objective_constraints = [{"type": t, "fun": c} for (t, c) in constraints]
+
+    def set_objective_bounds(
+        self,
+        bounds: Union[Tuple[int, ...], List[Tuple[int, ...]]],
+    ):
+        """ """
+
+        if isinstance(bounds, tuple):
+            bounds = [bounds for _ in range(self._data.shape[0])]
+
+        self._objective_bounds = bounds
+
+    def sample_random_portfolios(
+        self,
+        n_samples: int,
+        *,
+        distribution: Union[str, Callable] = "lognormal",
+        **kwargs: Dict[str, Any],
+    ):
+        """ """
+
+        if isinstance(distribution, str):
+            distribution = self._weight_initializations.get(distribution, None)
+            if distribution is None:
+                raise ValueError(
+                    "You provided a non valid weight initialization distribution."
+                )
+
+        portfolios = []
+
+        for i in (bar := tqdm(range(n_samples))):
+            if i % 10:
+                bar.set_description(
+                    f"Sampling random portfolio {i + 1} from "
+                    f"{distribution.__name__} distribution"
+                )
+
+            portfolio = distribution(**kwargs)
+            portfolios.append(portfolio / portfolio.sum())
+
+        self._random_portfolios = np.transpose(np.concatenate(portfolios, axis=1))
+
+    @check_valid_weights
+    def variance(self) -> float:
+        """ """
+
+        return weighted_variance(
+            self._weights.T,
+            self.daily_covariance(),
+        )
+
     @check_valid_weights
     def volatility(self) -> float:
         """ """
 
         return np.sqrt(
             weighted_variance(
-                self._weights,
+                self._weights.T,
                 self.daily_covariance(),
-            )
-        ) * np.sqrt(self._n_trading_days)
+            ),
+        )
 
     @check_valid_weights
     def expected_returns(self) -> float:
         """ """
 
-        return np.mean(
-            weighted_returns(
-                self._weights,
-                self.daily_returns_mean() * self._n_trading_days,
-            ),
-            axis=1,
-        )
+        return weighted_returns(self._weights.T, self.daily_returns_mean())
 
     @check_valid_weights
     def sharpe_ratio(self) -> float:
@@ -217,6 +336,122 @@ class Portfolio(object):
         r = self.expected_returns()
         v = self.volatility()
         return sharpe_ratio(r, v, self._risk_free_rate)
+
+    def verify_can_optimize(self) -> Optional[FinqError]:
+        """ """
+
+        if self._objective_function is None:
+            raise ObjectiveFunctionError
+
+        if self._weights is None:
+            raise InvalidPortfolioWeightsError
+
+    def optimize(self, *, method: str = "COBYLA", **kwargs: Dict[str, Any]):
+        """ """
+
+        if not callable(method) and method not in self._supported_optimization_methods:
+            raise ValueError(
+                "The optimization method you provided is not supported. It has to either "
+                f"be one of `({'.'.join(self._supported_optimization_methods.keys())})` or "
+                f"a callable optimization function. You provided: {method}."
+            )
+
+        self.verify_can_optimize()
+
+        result = scipyopt.minimize(
+            self._objective_function,
+            self._weights.reshape(-1),
+            self._objective_function_args,
+            method=method,
+            bounds=self._objective_bounds,
+            constraints=self._objective_constraints,
+            **kwargs,
+        )
+
+        x = np.transpose(result.x[None])
+        self._weights = x / x.sum()
+
+    def plot_mean_variance(
+        self,
+        *,
+        n_samples: int = 1000,
+        figsize: Tuple[int, int] = (12, 7),
+        title: str = "Mean variance optimization",
+        xlabel: str = "Volatility",
+        ylabel: str = "Period returns mean",
+    ):
+        """ """
+
+        if self._weights is None:
+            self.initialize_random_weights(
+                "lognormal",
+                size=(self._data.shape[0], 1),
+            )
+
+        if self._random_portfolios is None:
+            self.sample_random_portfolios(
+                n_samples,
+                size=self._weights.shape,
+            )
+
+        fig, ax = plt.subplots(figsize=figsize)
+
+        random_variance = np.diag(
+            weighted_variance(
+                self._random_portfolios,
+                self.daily_covariance(),
+            )
+        )
+
+        random_returns = weighted_returns(
+            self._random_portfolios,
+            self.daily_returns_mean(),
+        )
+
+        random_sharpe_ratio = random_returns / random_variance
+
+        expected_returns = self.expected_returns()
+        variance = self.variance()
+
+        portfolio_sharpe_ratio = expected_returns / variance
+
+        colorbar = ax.scatter(
+            random_variance,
+            random_returns,
+            c=random_sharpe_ratio,
+            marker=".",
+            cmap="plasma",
+            label="Random portfolios",
+            alpha=0.7,
+        )
+
+        ax.scatter(
+            variance,
+            expected_returns,
+            color="lime",
+            marker="x",
+            s=50,
+            alpha=0.9,
+            label=f"Optimal, {portfolio_sharpe_ratio.item():.1f} sharpe ratio",
+        )
+
+        ax.scatter(
+            random_variance[np.argmax(random_sharpe_ratio)],
+            random_returns[np.argmax(random_sharpe_ratio)],
+            c="red",
+            marker="d",
+            s=40,
+            alpha=0.9,
+            label=f"Best random, {random_sharpe_ratio.max():.1f} sharpe ratio",
+        )
+
+        ax.set_xlabel(xlabel)
+        ax.set_ylabel(ylabel)
+        ax.set_title(title)
+
+        fig.legend()
+        plt.colorbar(colorbar, label="Sharpe ratio")
+        plt.show()
 
     @property
     def weights(self) -> Optional[np.ndarray]:
@@ -227,7 +462,3 @@ class Portfolio(object):
     def weights(self, weights: np.ndarray):
         """ """
         self._weights = weights
-
-    def optimize(self, method: str, **kwargs: Dict[str, Any]):
-        """ """
-        raise NotImplementedError

@@ -1,0 +1,4 @@
+# *finq* examples
+
+...
+

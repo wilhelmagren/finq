@@ -22,11 +22,33 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-11-01
-Last updated: 2023-11-01
+Last updated: 2023-11-02
 """
 
 import numpy as np
 from typing import Union
+
+
+def constraint_weights_all_positive(w: np.ndarray) -> int:
+    """ """
+
+    return np.sum(w <= 0)
+
+
+def constraint_weights_are_normalized(w: np.ndarray) -> float:
+    """ """
+
+    return np.abs(w.sum() - 1)
+
+
+def mean_variance(
+    w: np.ndarray,
+    cov: np.ndarray,
+    r: np.ndarray,
+) -> float:
+    """ """
+
+    return weighted_variance(w, cov) - weighted_returns(w, r)
 
 
 def k_moment(x: np.ndarray, k: int) -> float:
@@ -65,13 +87,13 @@ def sharpe_ratio(
     return (r - rfr) / v
 
 
-def weighted_returns(w: np.ndarray, x: np.ndarray) -> np.ndarray:
+def weighted_returns(w: np.ndarray, r: np.ndarray) -> np.ndarray:
     """ """
 
-    return np.dot(w, x)
+    return np.dot(w, r)
 
 
 def weighted_variance(w: np.ndarray, cov: np.ndarray) -> np.ndarray:
     """ """
 
-    return np.dot(w.T, np.dot(cov, w))
+    return np.dot(w, np.dot(cov, w.T))

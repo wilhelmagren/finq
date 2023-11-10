@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-10
-Last updated: 2023-10-31
+Last updated: 2023-11-10
 """
 
 from __future__ import annotations
@@ -217,6 +217,18 @@ class Dataset(object):
 
         """
         return self._data.get(key, None)
+
+    def __len__(self) -> int:
+        """
+        Get the number of names in the dataset.
+
+        Returns
+        -------
+        int
+            The number of names.
+
+        """
+        return len(self._symbols)
 
     @staticmethod
     def _save_data(data: pd.DataFrame, path: Union[Path, str], separator: str):
@@ -837,6 +849,7 @@ class Dataset(object):
                 market=self._market,
                 index_name=self._index_name,
                 price_type=price_type,
+                pre_compute=False,
             )
             for i, ticker in enumerate(self._symbols)
         }
