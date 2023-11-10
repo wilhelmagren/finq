@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 File created: 2023-10-09
-Last updated: 2023-11-01
+Last updated: 2023-11-10
 """
 
 
@@ -49,6 +49,12 @@ class InvalidPortfolioWeightsError(FinqError):
 
 
 class NoFeasibleSolutionError(FinqError):
+    """ """
+
+    pass
+
+
+class ObjectiveFunctionError(FinqError):
     """ """
 
     pass
