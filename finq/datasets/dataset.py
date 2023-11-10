@@ -217,7 +217,7 @@ class Dataset(object):
 
         """
         return self._data.get(key, None)
-    
+
     def __len__(self) -> int:
         """
         Get the number of names in the dataset.
