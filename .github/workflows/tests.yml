@@ -23,7 +23,7 @@ jobs:
           python-version: ${{ matrix.python }}
           cache: 'pip'
       - name: Install Poetry
-        uses: abatilo/actions-poetry@v2
+        uses: abatilo/actions-poetry@v3
       - name: Setup poetry cache
         uses: actions/cache@v3
         with:
