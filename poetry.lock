@@ -3603,13 +3603,13 @@ test = ["websockets"]
 
 [[package]]
 name = "yfinance"
-version = "0.2.33"
+version = "0.2.35"
 description = "Download market data from Yahoo! Finance API"
 optional = false
 python-versions = "*"
 files = [
-    {file = "yfinance-0.2.33-py2.py3-none-any.whl", hash = "sha256:2076a19ee13fb55af0ad3d5f110db3fb007409893e40464177685fc3e6d08ffd"},
-    {file = "yfinance-0.2.33.tar.gz", hash = "sha256:08aeb63a927742514098698d80f4315aa92d23bc253c1f204ced6377457c3e07"},
+    {file = "yfinance-0.2.35-py2.py3-none-any.whl", hash = "sha256:f3d15cbf06fadd06c607520f70c54cbae4560a99675307ee2383d000232614f8"},
+    {file = "yfinance-0.2.35.tar.gz", hash = "sha256:bfd5102cc9e5aa259c26b86fb53c2abe9e05ff63d387c03adf0b4ff2f6f2375a"},
 ]
 
 [package.dependencies]
@@ -3624,6 +3624,10 @@ pandas = ">=1.3.0"
 peewee = ">=3.16.2"
 pytz = ">=2022.5"
 requests = ">=2.31"
+
+[package.extras]
+nospam = ["requests-cache (>=1.0)", "requests-ratelimiter (>=0.3.1)"]
+repair = ["scipy (>=1.6.3)"]
 
 [[package]]
 name = "zipp"
