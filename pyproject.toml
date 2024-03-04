@@ -63,7 +63,7 @@ optional = true
 # Dev/test requirements
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.3.2"
-pytest = "^7.4.2"
+pytest = ">=7.4.2,<9.0.0"
 pyclean = "^2.7.5"
 black = "^23.9.1"
 ruff = ">=0.0.292,<0.2.1"
