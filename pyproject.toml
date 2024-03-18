@@ -65,7 +65,7 @@ optional = true
 coverage = "^7.3.2"
 pytest = "^7.4.2"
 pyclean = "^2.7.5"
-black = "^23.9.1"
+black = ">=23.9.1,<25.0.0"
 ruff = ">=0.0.292,<0.2.1"
 pre-commit = "^3.5.0"
 mypy = "^1.6.0"
