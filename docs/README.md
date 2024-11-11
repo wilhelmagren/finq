@@ -1,3 +1,0 @@
-# *finq* documentation
-
-...

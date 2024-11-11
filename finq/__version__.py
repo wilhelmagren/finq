@@ -1,1 +1,2 @@
-__version__ = "0.4.0"
+"""The current version of `finq`."""
+__version__ = "0.5.0"
